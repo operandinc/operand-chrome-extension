@@ -1,0 +1,21 @@
+{
+  "name": "Brain Chrome Extension",
+  "description": "Brain gang",
+  "version": "0.1.0",
+  "manifest_version": 3,
+  "icons": {
+    "16": "./16.png",
+    "48": "./48.png",
+    "128": "./128.png"
+  },
+  "options_page": "./options.html",
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Save to Brain"
+  },
+  "permissions": ["activeTab", "tabs", "storage", "scripting", "commands"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "host_permissions": ["https://brain.operand.ai/*"]
+}
