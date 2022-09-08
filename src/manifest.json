@@ -17,5 +17,5 @@
   "background": {
     "service_worker": "background.js"
   },
-  "host_permissions": ["https://brain.operand.ai/*"]
+  "host_permissions": ["https://brain.operand.ai/*", "http://localhost:8080/*"]
 }

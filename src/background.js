@@ -9,11 +9,13 @@ chrome.runtime.onInstalled.addListener(async () => {
   });
 });
 
+const ignorePrefixes = ["chrome://", "chrome-extension://", "about:"];
+
 // On a new tab get the url
 chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
   if (changeInfo.status == "complete") {
     // Check that the url is not a chrome url
-    if (!tab.url.startsWith("chrome://")) {
+    if (!ignorePrefixes.some((prefix) => tab.url.startsWith(prefix))) {
       // Get the mode
       chrome.storage.sync.get("mode", async (result) => {
         if (result.mode == "auto") {
