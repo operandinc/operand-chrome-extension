@@ -9,7 +9,12 @@ chrome.runtime.onInstalled.addListener(async () => {
   });
 });
 
-const ignorePrefixes = ["chrome://", "chrome-extension://", "about:"];
+const ignorePrefixes = [
+  "chrome://",
+  "chrome-extension://",
+  "about:",
+  "http://localhost",
+];
 
 // On a new tab get the url
 chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
