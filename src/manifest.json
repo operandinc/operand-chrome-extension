@@ -1,6 +1,6 @@
 {
   "name": "Brain Chrome Extension",
-  "description": "Brain gang",
+  "description": "Provides functionality for indexing webpages to your Operand Brain",
   "version": "0.1.0",
   "manifest_version": 3,
   "icons": {
@@ -13,7 +13,7 @@
     "default_popup": "popup.html",
     "default_title": "Save to Brain"
   },
-  "permissions": ["activeTab", "tabs", "storage", "scripting", "commands"],
+  "permissions": ["activeTab", "tabs", "storage"],
   "background": {
     "service_worker": "background.js"
   },
