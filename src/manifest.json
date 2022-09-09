@@ -13,9 +13,8 @@
     "default_popup": "popup.html",
     "default_title": "Save to Brain"
   },
-  "permissions": ["activeTab", "tabs", "storage"],
+  "permissions": ["tabs", "storage"],
   "background": {
     "service_worker": "background.js"
-  },
-  "host_permissions": ["https://brain.operand.ai/*", "http://localhost:8080/*"]
+  }
 }
