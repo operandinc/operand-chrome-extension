@@ -1,7 +1,7 @@
 {
   "name": "Brain Chrome Extension",
   "description": "Provides functionality for indexing webpages to your Operand Brain",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "manifest_version": 3,
   "icons": {
     "16": "./16.png",
