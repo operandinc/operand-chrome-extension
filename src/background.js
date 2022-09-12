@@ -14,6 +14,8 @@ const ignorePrefixes = [
   "chrome-extension://",
   "about:",
   "http://localhost",
+  "https://www.google.com/search",
+  "https://brain.operand.ai/q=",
 ];
 
 // On a new tab get the url

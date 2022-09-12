@@ -12,6 +12,7 @@ module.exports = {
   entry: {
     popup: path.resolve(__dirname, "./src/index-popup.js"),
     options: path.resolve(__dirname, "./src/index-options.js"),
+    content: path.resolve(__dirname, "./src/index-content.js"),
   },
   output: {
     filename: "[name].bundle.js",

@@ -22,11 +22,17 @@ function saveMode(mode) {
   chrome.storage.sync.set({ mode });
 }
 
+function saveInject(inject) {
+  chrome.storage.sync.set({ inject });
+}
+
 function Options() {
   const [integrationToken, setIntegrationToken] = React.useState("");
   const [savedToken, setSavedToken] = React.useState(false);
   const [mode, setMode] = React.useState("manual");
-  const [enabled, setEnabled] = React.useState(false);
+  const [modeSwitch, setModeSwitch] = React.useState(false);
+  const [inject, setInject] = React.useState(true);
+  const [injectSwitch, setInjectSwitch] = React.useState(true);
   React.useEffect(() => {
     loadIntegrationToken();
     // Get the mode and set the switch
@@ -34,16 +40,24 @@ function Options() {
       if (result.mode != undefined) {
         setMode(result.mode);
         if (result.mode == "auto") {
-          setEnabled(true);
+          setModeSwitch(true);
+        }
+      }
+    });
+    // Get the inject and set the switch
+    chrome.storage.sync.get("inject", (result) => {
+      if (result.inject != undefined) {
+        setInject(result.inject);
+        if (result.inject == "false") {
+          setInjectSwitch(false);
         }
       }
     });
   }, []);
 
   // When enabled changes, save the mode
-
   React.useEffect(() => {
-    if (enabled) {
+    if (modeSwitch) {
       saveMode("auto");
     } else {
       saveMode("manual");
@@ -54,7 +68,22 @@ function Options() {
         setMode(result.mode);
       }
     });
-  }, [enabled]);
+  }, [modeSwitch]);
+
+  // When inject changes, save the inject
+  React.useEffect(() => {
+    if (injectSwitch) {
+      saveInject("true");
+    } else {
+      saveInject("false");
+    }
+    // Get the inject again
+    chrome.storage.sync.get("inject", (result) => {
+      if (result.inject != undefined) {
+        setInject(result.inject);
+      }
+    });
+  }, [injectSwitch]);
 
   return (
     <div className="max-w-7xl pt-12 mx-auto px-4 sm:px-6 lg:px-8">
@@ -122,17 +151,17 @@ function Options() {
             </div>
             <Switch.Group as="div" className="flex items-center">
               <Switch
-                checked={enabled}
-                onChange={setEnabled}
+                checked={modeSwitch}
+                onChange={setModeSwitch}
                 className={classNames(
-                  enabled ? "bg-green-600" : "bg-gray-200",
+                  modeSwitch ? "bg-green-600" : "bg-gray-200",
                   "relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none"
                 )}
               >
                 <span
                   aria-hidden="true"
                   className={classNames(
-                    enabled ? "translate-x-5" : "translate-x-0",
+                    modeSwitch ? "translate-x-5" : "translate-x-0",
                     "pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
                   )}
                 />
@@ -148,6 +177,40 @@ function Options() {
             </p>
             <p className="mt-2 text-sm text-gray-500">
               Auto: We'll index every page you visit.
+            </p>
+          </div>
+          <div className="pt-5">
+            <div className="block pb-3 text-sm font-medium text-gray-700">
+              Inject
+            </div>
+            <Switch.Group as="div" className="flex items-center">
+              <Switch
+                checked={injectSwitch}
+                onChange={setInjectSwitch}
+                className={classNames(
+                  injectSwitch ? "bg-green-600" : "bg-gray-200",
+                  "relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none"
+                )}
+              >
+                <span
+                  aria-hidden="true"
+                  className={classNames(
+                    injectSwitch ? "translate-x-5" : "translate-x-0",
+                    "pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
+                  )}
+                />
+              </Switch>
+              <Switch.Label as="span" className="ml-3" id="mode">
+                <span className="text-sm font-medium text-gray-900">
+                  {inject}
+                </span>
+              </Switch.Label>
+            </Switch.Group>
+            <p className="mt-2 text-sm text-gray-500">
+              Enabled: We'll inject Operand search results into Google.
+            </p>
+            <p className="mt-2 text-sm text-gray-500">
+              Disabled: You can only search from your dashboard.
             </p>
           </div>
         </div>
