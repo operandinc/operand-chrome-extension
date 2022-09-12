@@ -46,7 +46,7 @@ const Content = ({ query }) => {
         ) : (
           <>
             {results && results.length > 0 ? (
-              <div className="w-full">
+              <div className="w-full space-y-4">
                 {results.map((result) => (
                   <div className="w-full">
                     <div className="text-sm text-gray-700 dark:text-gray-400 truncate">
