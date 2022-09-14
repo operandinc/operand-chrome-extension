@@ -1,3 +1,19 @@
+// Get history going back 30 days.
+// function getHistory() {
+//   return new Promise((resolve, reject) => {
+//     chrome.history.search(
+//       {
+//         text: "",
+//         startTime: new Date().getTime() - 1000 * 60 * 60 * 24 * 30,
+//         maxResults: 10000,
+//       },
+//       (results) => {
+//         resolve(results);
+//       }
+//     );
+//   });
+// }
+
 // On Install
 chrome.runtime.onInstalled.addListener(async () => {
   console.log("Installed!");
@@ -7,6 +23,16 @@ chrome.runtime.onInstalled.addListener(async () => {
       chrome.runtime.openOptionsPage();
     }
   });
+  // Once the token is set we want to get their history
+  // chrome.storage.onChanged.addListener(async (changes, namespace) => {
+  //   if (changes.integrationToken) {
+  //     // Get the history
+  //     const history = await getHistory();
+  //     // Send the history to the server
+  //     console.log("Sending history to server");
+  //     console.log(history);
+  //   }
+  // });
 });
 
 const ignorePrefixes = [
@@ -18,8 +44,25 @@ const ignorePrefixes = [
   "https://brain.operand.ai/q=",
 ];
 
+// Injected script that returns the DOM.
+// function getDOM() {
+//   return document.documentElement.outerHTML;
+// }
+
 // On a new tab get the url
 chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
+  // Code to get the DOM for private indexing.
+  // chrome.scripting.executeScript(
+  //   {
+  //     target: { tabId: tabId },
+  //     func: getDOM,
+  //   },
+  //   (injectionResults) => {
+  //     for (const frameResult of injectionResults)
+  //       console.log("Frame Title: " + frameResult.result);
+  //   }
+  // );
+
   if (changeInfo.status == "complete") {
     // Check that the url is not a chrome url
     if (!ignorePrefixes.some((prefix) => tab.url.startsWith(prefix))) {
