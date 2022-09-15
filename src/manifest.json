@@ -19,8 +19,7 @@
       "js": ["content.bundle.js"]
     }
   ],
-  "host_permissions": ["<all_urls>"],
-  "permissions": ["tabs", "storage", "scripting", "history"],
+  "permissions": ["tabs", "storage"],
   "background": {
     "service_worker": "background.js"
   }
