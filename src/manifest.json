@@ -16,7 +16,8 @@
   "content_scripts": [
     {
       "matches": ["https://www.google.com/search*"],
-      "js": ["content.bundle.js"]
+      "js": ["content.bundle.js"],
+      "run_at": "document_end"
     }
   ],
   "permissions": ["tabs", "storage"],

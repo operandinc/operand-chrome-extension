@@ -14,6 +14,38 @@
 //   });
 // }
 
+async function syncSettings(token) {
+  const response = await fetch(
+    "https://brain.operand.ai/services.user.v1.UserService/Settings",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: token,
+      },
+      body: JSON.stringify({}),
+    }
+  );
+  // Check for 200
+  if (response.status != 200) {
+    console.log("Error syncing settings");
+    return;
+  }
+  const data = await response.json();
+  // Save the settings
+  chrome.storage.sync.set({ settings: data });
+}
+
+chrome.runtime.onStartup.addListener(function () {
+  // Get settings from server.
+  chrome.storage.sync.get("integrationToken", async (result) => {
+    if (!result.integrationToken) {
+      chrome.runtime.openOptionsPage();
+    }
+    syncSettings(result.integrationToken);
+  });
+});
+
 // On Install
 chrome.runtime.onInstalled.addListener(async () => {
   console.log("Installed!");
@@ -23,16 +55,18 @@ chrome.runtime.onInstalled.addListener(async () => {
       chrome.runtime.openOptionsPage();
     }
   });
-  // Once the token is set we want to get their history
-  // chrome.storage.onChanged.addListener(async (changes, namespace) => {
-  //   if (changes.integrationToken) {
-  //     // Get the history
-  //     const history = await getHistory();
-  //     // Send the history to the server
-  //     console.log("Sending history to server");
-  //     console.log(history);
-  //   }
-  // });
+  // Once the token is set we want to get history and settings.
+  chrome.storage.onChanged.addListener(async (changes, namespace) => {
+    if (changes.integrationToken) {
+      // // Get the history
+      // const history = await getHistory();
+      // // Send the history to the server
+      // console.log("Sending history to server");
+      // console.log(history);
+      // Get the settings
+      syncSettings(changes.integrationToken.newValue);
+    }
+  });
 });
 
 const ignorePrefixes = [
@@ -67,16 +101,13 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
     // Check that the url is not a chrome url
     if (!ignorePrefixes.some((prefix) => tab.url.startsWith(prefix))) {
       // Get the mode
-      chrome.storage.sync.get("mode", async (result) => {
-        if (result.mode == "auto") {
-          console.log("Mode is auto");
+      chrome.storage.sync.get("settings", async (result) => {
+        if (result.settings && result.settings.automaticIndexing) {
           // Get the token
           chrome.storage.sync.get("integrationToken", async (result) => {
             if (result.integrationToken) {
               const token = result.integrationToken;
               const url = tab.url;
-              console.log("Token is set");
-              console.log("Indexing " + url);
               // Send the url to the API
               try {
                 const response = await fetch(
@@ -93,7 +124,7 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
                   }
                 );
                 const data = await response.json();
-                console.log(data);
+
                 return true;
               } catch (e) {
                 console.log(e);

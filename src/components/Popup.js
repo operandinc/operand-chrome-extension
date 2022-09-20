@@ -16,7 +16,7 @@ async function doIndex(url) {
       }),
     });
     const data = await response.json();
-    console.log(data);
+
     return true;
   } catch (e) {
     console.log(e);
@@ -26,7 +26,7 @@ async function doIndex(url) {
 
 function Popup() {
   const [validToken, setValidToken] = React.useState(false);
-  const [mode, setMode] = React.useState("manual");
+  const [mode, setMode] = React.useState("auto");
   const [indexed, setIndexed] = React.useState(false);
   React.useEffect(() => {
     // Get the token
@@ -35,10 +35,10 @@ function Popup() {
         setValidToken(true);
       }
     });
-    // Get the mode
-    chrome.storage.sync.get("mode", (result) => {
-      if (result.mode != undefined) {
-        setMode(result.mode);
+    // Get the settings
+    chrome.storage.sync.get("settings", (result) => {
+      if (result.settings != undefined && !result.settings.automaticIndexing) {
+        setMode("manual");
       }
     });
   }, []);

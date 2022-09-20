@@ -1,95 +1,53 @@
 import React from "react";
-import { Switch } from "@headlessui/react";
-
-function classNames(...classes) {
-  return classes.filter(Boolean).join(" ");
-}
 
 function saveIntegrationToken(integrationToken) {
   chrome.storage.sync.set({ integrationToken });
 }
 
-function loadIntegrationToken() {
-  chrome.storage.sync.get("integrationToken", function (result) {
-    if (result.integrationToken != undefined) {
-      document.getElementById("integrationToken").placeholder =
-        result.integrationToken;
-    }
-  });
-}
-
-function saveMode(mode) {
-  chrome.storage.sync.set({ mode });
-}
-
-function saveInject(inject) {
-  chrome.storage.sync.set({ inject });
-}
-
 function Options() {
   const [integrationToken, setIntegrationToken] = React.useState("");
   const [savedToken, setSavedToken] = React.useState(false);
-  const [mode, setMode] = React.useState("manual");
-  const [modeSwitch, setModeSwitch] = React.useState(false);
-  const [inject, setInject] = React.useState(true);
-  const [injectSwitch, setInjectSwitch] = React.useState(true);
+  const [syncedSettings, setSyncedSettings] = React.useState(false);
+  function loadIntegrationToken() {
+    chrome.storage.sync.get("integrationToken", function (result) {
+      if (result.integrationToken != undefined) {
+        document.getElementById("integrationToken").placeholder =
+          result.integrationToken;
+        setIntegrationToken(result.integrationToken);
+      }
+    });
+  }
   React.useEffect(() => {
     loadIntegrationToken();
-    // Get the mode and set the switch
-    chrome.storage.sync.get("mode", (result) => {
-      if (result.mode != undefined) {
-        setMode(result.mode);
-        if (result.mode == "auto") {
-          setModeSwitch(true);
-        }
-      }
-    });
-    // Get the inject and set the switch
-    chrome.storage.sync.get("inject", (result) => {
-      if (result.inject != undefined) {
-        setInject(result.inject);
-        if (result.inject == "false") {
-          setInjectSwitch(false);
-        }
-      }
-    });
   }, []);
-
-  // When enabled changes, save the mode
-  React.useEffect(() => {
-    if (modeSwitch) {
-      saveMode("auto");
-    } else {
-      saveMode("manual");
-    }
-    // Get the mode again
-    chrome.storage.sync.get("mode", (result) => {
-      if (result.mode != undefined) {
-        setMode(result.mode);
+  async function syncSettings() {
+    setSyncedSettings(false);
+    const response = await fetch(
+      "https://brain.operand.ai/services.user.v1.UserService/Settings",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: integrationToken,
+        },
+        body: JSON.stringify({}),
       }
-    });
-  }, [modeSwitch]);
-
-  // When inject changes, save the inject
-  React.useEffect(() => {
-    if (injectSwitch) {
-      saveInject("true");
-    } else {
-      saveInject("false");
+    );
+    // Check for 200
+    if (response.status != 200) {
+      console.log("Error syncing settings");
+      return;
     }
-    // Get the inject again
-    chrome.storage.sync.get("inject", (result) => {
-      if (result.inject != undefined) {
-        setInject(result.inject);
-      }
-    });
-  }, [injectSwitch]);
-
+    const data = await response.json();
+    // Save the settings
+    chrome.storage.sync.set({ settings: data });
+    setSyncedSettings(true);
+  }
   return (
     <div className="max-w-7xl pt-12 mx-auto px-4 sm:px-6 lg:px-8">
       <div className="max-w-3xl p-5 mx-auto">
         <h3 className="text-xl leading-6 font-semibold text-gray-900">
-          Brain Chrome Extension Options
+          Token and Settings.
         </h3>
         <div className="py-5">
           <form
@@ -140,79 +98,40 @@ function Options() {
             </div>
           </form>
           {/* If there is a valid token say that its been saved */}
-          {savedToken != "" && (
+          {savedToken != false && (
             <div className="mt-2 text-sm text-gray-500">
               Your token has been saved!
             </div>
           )}
+        </div>
+        <div className="py-5 space-y-5">
+          <h3 className="text-xl leading-6 font-semibold text-gray-900">
+            Settings
+          </h3>
+          <p className="text-sm text-gray-500">
+            To change settings in the extension you need to change your settings
+            in your account and then sync them here.
+          </p>
           <div>
-            <div className="block pb-3 text-sm font-medium text-gray-700">
-              Mode
-            </div>
-            <Switch.Group as="div" className="flex items-center">
-              <Switch
-                checked={modeSwitch}
-                onChange={setModeSwitch}
-                className={classNames(
-                  modeSwitch ? "bg-green-600" : "bg-gray-200",
-                  "relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none"
-                )}
-              >
-                <span
-                  aria-hidden="true"
-                  className={classNames(
-                    modeSwitch ? "translate-x-5" : "translate-x-0",
-                    "pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
-                  )}
-                />
-              </Switch>
-              <Switch.Label as="span" className="ml-3" id="mode">
-                <span className="text-sm font-medium text-gray-900">
-                  {mode}
-                </span>
-              </Switch.Label>
-            </Switch.Group>
-            <p className="mt-2 text-sm text-gray-500">
-              Manual: Choose when to send a page to Brain.
-            </p>
-            <p className="mt-2 text-sm text-gray-500">
-              Auto: We'll index every page you visit.
-            </p>
+            <a href="https://brain.operand.ai/settings" target="_blank">
+              <button className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded text-gray-700 bg-white hover:bg-gray-200">
+                Change Settings
+              </button>
+            </a>
           </div>
-          <div className="pt-5">
-            <div className="block pb-3 text-sm font-medium text-gray-700">
-              Inject
+          <button
+            onClick={() => {
+              syncSettings();
+            }}
+            className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded text-gray-700 bg-white hover:bg-gray-200"
+          >
+            Sync Settings
+          </button>
+          {syncedSettings != false && (
+            <div className="mt-2 text-sm text-gray-500">
+              Your settings have been synced!
             </div>
-            <Switch.Group as="div" className="flex items-center">
-              <Switch
-                checked={injectSwitch}
-                onChange={setInjectSwitch}
-                className={classNames(
-                  injectSwitch ? "bg-green-600" : "bg-gray-200",
-                  "relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none"
-                )}
-              >
-                <span
-                  aria-hidden="true"
-                  className={classNames(
-                    injectSwitch ? "translate-x-5" : "translate-x-0",
-                    "pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
-                  )}
-                />
-              </Switch>
-              <Switch.Label as="span" className="ml-3" id="mode">
-                <span className="text-sm font-medium text-gray-900">
-                  {inject}
-                </span>
-              </Switch.Label>
-            </Switch.Group>
-            <p className="mt-2 text-sm text-gray-500">
-              Enabled: We'll inject Operand search results into Google.
-            </p>
-            <p className="mt-2 text-sm text-gray-500">
-              Disabled: You can only search from your dashboard.
-            </p>
-          </div>
+          )}
         </div>
       </div>
     </div>

@@ -1,7 +1,67 @@
 import React from "react";
 
+const Result = ({ result }) => {
+  return (
+    <div className="w-full h-full">
+      <div className="text-sm text-gray-700 dark:text-gray-400 truncate h-5">
+        {result.url}
+      </div>
+      <a
+        href={result.url}
+        target="_blank"
+        className="text-blue-500 hover:underline text-lg truncate h-6"
+      >
+        {result.title}
+      </a>
+      <div className="py-1">
+        <div className="line-clamp-2 h-16 text-sm overflow:hidden">
+          {result.snippet}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const Answer = ({ answer, results }) => {
+  return (
+    <div className="w-full h-full">
+      {/* Answer */}
+      <div className="w-full h-14 py-2">
+        <div className="line-clamp-3">{answer}</div>
+      </div>
+      {/* Feedback */}
+      <div className="w-full h-6 text-sm">
+        <div>
+          {" "}
+          Was this answer helpful ? {"  "}
+          <span className="text-blue-500 hover:underline hover:cursor-pointer">
+            Yes
+          </span>{" "}
+          |{" "}
+          <span className="text-blue-500 hover:underline hover:cursor-pointer">
+            No
+          </span>
+        </div>
+      </div>
+      {/* Sources*/}
+      <div className="w-full h-6">
+        <div className="text-sm truncate">
+          Sources:{" "}
+          {results &&
+            results.map((result) => (
+              <span>
+                <a href={result.url}>{result.title}</a>{" "}
+              </span>
+            ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const Content = ({ query }) => {
   const [results, setResults] = React.useState([]);
+  const [answer, setAnswer] = React.useState("");
   const [loading, setLoading] = React.useState(true);
   const [token, setToken] = React.useState("");
   React.useEffect(() => {
@@ -14,67 +74,80 @@ const Content = ({ query }) => {
   }, []);
   React.useEffect(() => {
     const fetchResults = async () => {
-      const response = await fetch("https://brain.operand.ai/api/query", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: token,
-        },
-        body: JSON.stringify({
-          query,
-        }),
-      });
-      const data = await response.json();
-      setResults(data.results);
-      setLoading(false);
+      try {
+        // Fetch all urls in search results for server-side processing
+        const hrefs = Array.from(
+          document.querySelectorAll(`div[id="search"] a[href]`)
+        ).map((a) => a.href);
+        const response = await fetch("https://brain.operand.ai/api/query", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: token,
+          },
+          body: JSON.stringify({
+            query,
+            // hrefs,
+          }),
+        });
+        const data = await response.json();
+        // Make sure we have some results
+        if (data) {
+          // Set the results
+          setResults(data.results);
+          // Set the answer
+          // setAnswer(data.answer);
+        }
+        setLoading(false);
+      } catch (error) {
+        console.log(error);
+        setLoading(false);
+      }
     };
     if (token) {
       fetchResults();
     }
   }, [query, token]);
+
+  // Show an answer first if its available.
   return (
     <div className={`${!token ? "hidden" : ""}`}>
       {/* Operand Section */}
-      <div className="w-full">
-        <div className="pb-2 text-base text-black dark:text-white">
-          Operand Results:
+      <div className="w-full h-40 pb-3 overflow:hidden">
+        <div className="h-6 text-base text-black dark:text-white ">
+          Operand Result:
         </div>
         {loading ? (
-          <div className="w-full">
-            <p>Loading Personal Search Results ...</p>
+          <div className="flex items-center justify-center w-full h-28">
+            <div>Loading Personal Search Results ...</div>
           </div>
         ) : (
-          <>
-            {results && results.length > 0 ? (
-              <div className="w-full space-y-4">
-                {results.map((result) => (
-                  <div className="w-full">
-                    <div className="text-sm text-gray-700 dark:text-gray-400 truncate">
-                      {result.url}
-                    </div>
-                    <a
-                      href={result.url}
-                      target="_blank"
-                      className="text-blue-500 hover:underline text-lg"
-                    >
-                      {result.title}
-                    </a>
-                    <div className="py-1">
-                      <div className="line-clamp-2 text-sm overflow:hidden">
-                        {result.snippet}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="w-full">
-                <p>No results found.</p>
-              </div>
+          <div className="w-full h-28">
+            {/* Have an answer display it */}
+            {answer && <Answer answer={answer} results={results} />}
+            {/* No answer but search result display it */}
+            {answer == "" && results.length > 0 && (
+              <Result result={results[0]} />
             )}
-          </>
+            {/* No answer or search results */}
+            {answer == "" && results.length == 0 && <div>No results found</div>}
+          </div>
         )}
-        <div className="bg-gray-300 h-0.5 my-3 rounded w-full"></div>
+        <div className="flex items-center w-full h-4 py-2 space-x-4">
+          <div className="bg-gray-300 h-0.5 rounded flex-grow"></div>
+          <div
+            className="text-sm text-gray-700 dark:text-gray-400 hover:underline hover:cursor-pointer"
+            onClick={() => {
+              // Typeform link
+              window.open(
+                "https://operandai.typeform.com/to/svjZU4wl",
+                "_blank"
+              );
+            }}
+          >
+            have some feedback ?
+          </div>
+        </div>
       </div>
     </div>
   );
