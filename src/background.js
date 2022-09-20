@@ -111,7 +111,7 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
               // Send the url to the API
               try {
                 const response = await fetch(
-                  `https://brain.operand.ai/api/index`,
+                  `https://brain.operand.ai/services.brain.v1.BrainService/Index`,
                   {
                     method: "POST",
                     headers: {
@@ -123,8 +123,6 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
                     }),
                   }
                 );
-                const data = await response.json();
-
                 return true;
               } catch (e) {
                 console.log(e);

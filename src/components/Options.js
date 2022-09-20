@@ -109,8 +109,8 @@ function Options() {
             Settings
           </h3>
           <p className="text-sm text-gray-500">
-            To change settings in the extension you need to change your settings
-            in your account and then sync them here.
+            To change settings in the extension, you need to change your
+            settings in your account and then sync them here.
           </p>
           <div>
             <a href="https://brain.operand.ai/settings" target="_blank">
