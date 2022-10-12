@@ -1,6 +1,6 @@
 # Brain Chrome Extension
 
-This is the repo for [https://brain.operand.ai](https://brain.operand.ai)’s chrome extension.
+This is the repo for [https://operand.ai](https://operand.ai)’s chrome extension.
 
 To install the extension directly from the repo follow these steps:
 
