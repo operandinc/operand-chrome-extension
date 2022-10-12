@@ -1,4 +1,4 @@
-# Brain Chrome Extension
+# Operand Chrome Extension
 
 This is the repo for [https://operand.ai](https://operand.ai)’s chrome extension.
 
