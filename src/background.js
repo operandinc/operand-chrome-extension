@@ -16,7 +16,7 @@
 
 async function syncSettings(token) {
   const response = await fetch(
-    "https://brain.operand.ai/services.user.v1.UserService/Settings",
+    "https://operand.ai/api/external/clientSettings",
     {
       method: "POST",
       headers: {
@@ -111,7 +111,7 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
               // Send the url to the API
               try {
                 const response = await fetch(
-                  `https://brain.operand.ai/services.brain.v1.BrainService/Index`,
+                  `https://operand.ai/api/external/clientIndex`,
                   {
                     method: "POST",
                     headers: {

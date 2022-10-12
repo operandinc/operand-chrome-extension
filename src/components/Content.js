@@ -10,21 +10,18 @@ const Result = ({ result, queryId, token }) => {
         onClick={() => {
           // Send beacon
           if (queryId) {
-            fetch(
-              "https://brain.operand.ai/services.brain.v1.BrainService/Feedback",
-              {
-                method: "POST",
-                keepalive: true,
-                headers: {
-                  "Content-Type": "application/json",
-                  Authorization: token,
-                },
-                body: JSON.stringify({
-                  queryId,
-                  clickedDocumentId: result.publicId,
-                }),
-              }
-            );
+            fetch("https://operand.ai/api/external/clientFeedback", {
+              method: "POST",
+              keepalive: true,
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: token,
+              },
+              body: JSON.stringify({
+                queryId,
+                clickedDocumentId: result.publicId,
+              }),
+            });
           }
           // Open the link
           window.open(result.url, "_blank");
@@ -62,7 +59,7 @@ const Answer = ({ answer, results, queryId, token }) => {
                 // Send feedback
                 if (queryId) {
                   await fetch(
-                    "https://brain.operand.ai/services.brain.v1.BrainService/Feedback",
+                    "https://operand.ai/api/external/clientFeedback",
                     {
                       method: "POST",
                       keepalive: true,
@@ -89,7 +86,7 @@ const Answer = ({ answer, results, queryId, token }) => {
                 // Send feedback
                 if (queryId) {
                   await fetch(
-                    "https://brain.operand.ai/services.brain.v1.BrainService/Feedback",
+                    "https://operand.ai/api/external/clientFeedback",
                     {
                       method: "POST",
                       keepalive: true,
@@ -126,21 +123,18 @@ const Answer = ({ answer, results, queryId, token }) => {
                   onClick={() => {
                     // Send beacon
                     if (queryId) {
-                      fetch(
-                        "https://brain.operand.ai/services.brain.v1.BrainService/Feedback",
-                        {
-                          method: "POST",
-                          keepalive: true,
-                          headers: {
-                            "Content-Type": "application/json",
-                            Authorization: token,
-                          },
-                          body: JSON.stringify({
-                            queryId,
-                            clickedDocumentId: result.publicId,
-                          }),
-                        }
-                      );
+                      fetch("https://operand.ai/api/external/clientFeedback", {
+                        method: "POST",
+                        keepalive: true,
+                        headers: {
+                          "Content-Type": "application/json",
+                          Authorization: token,
+                        },
+                        body: JSON.stringify({
+                          queryId,
+                          clickedDocumentId: result.publicId,
+                        }),
+                      });
                     }
                     // Open the link
                     window.open(result.url, "_blank");
@@ -180,7 +174,7 @@ const Content = ({ query }) => {
         ).map((a) => a.href);
 
         const response = await fetch(
-          "https://brain.operand.ai/services.brain.v1.BrainService/Query",
+          "https://operand.ai/api/external/clientQuery",
           {
             method: "POST",
             headers: {

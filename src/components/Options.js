@@ -23,7 +23,7 @@ function Options() {
   async function syncSettings() {
     setSyncedSettings(false);
     const response = await fetch(
-      "https://brain.operand.ai/services.user.v1.UserService/Settings",
+      "https://operand.ai/api/external/clientSettings",
       {
         method: "POST",
         headers: {
@@ -84,7 +84,7 @@ function Options() {
                 To get your key go to your{" "}
                 <a
                   className="underline hover:cursor-pointer"
-                  href="https://brain.operand.ai/dashboard"
+                  href="https://operand.ai/personal/settings"
                 >
                   dashboard
                 </a>
@@ -113,7 +113,7 @@ function Options() {
             settings in your account and then sync them here.
           </p>
           <div>
-            <a href="https://brain.operand.ai/settings" target="_blank">
+            <a href="https://operand.ai/personal/settings" target="_blank">
               <button className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded text-gray-700 bg-white hover:bg-gray-200">
                 Change Settings
               </button>

@@ -5,19 +5,16 @@ async function doIndex(url) {
   const token = result.integrationToken;
   // Search for the query
   try {
-    const response = await fetch(
-      `https://brain.operand.ai/services.brain.v1.BrainService/Index`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: token,
-        },
-        body: JSON.stringify({
-          url,
-        }),
-      }
-    );
+    await fetch(`https://operand.ai/api/external/clientIndex`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: token,
+      },
+      body: JSON.stringify({
+        url,
+      }),
+    });
     return true;
   } catch (e) {
     console.log(e);
