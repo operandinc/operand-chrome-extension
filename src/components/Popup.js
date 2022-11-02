@@ -3,7 +3,6 @@ import React from "react";
 async function doIndex(url) {
   let result = await chrome.storage.sync.get("integrationToken");
   const token = result.integrationToken;
-  // Search for the query
   try {
     await fetch(`https://operand.ai/api/external/clientIndex`, {
       method: "POST",
