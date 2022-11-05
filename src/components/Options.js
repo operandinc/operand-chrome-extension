@@ -144,7 +144,7 @@ function Options() {
                 To get your key go to your{" "}
                 <a
                   className="underline hover:cursor-pointer"
-                  href="https://operand.ai/personal/settings"
+                  href="https://operand.ai/personal/sources"
                 >
                   dashboard
                 </a>
@@ -181,7 +181,7 @@ function Options() {
           ) : (
             <button
               onClick={async () => {
-                syncHistory();
+                await syncHistory();
                 syncSettings();
               }}
               className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded text-gray-700 bg-white hover:bg-gray-200"
@@ -200,7 +200,7 @@ function Options() {
             settings in your account and then sync them here.
           </p>
           <div>
-            <a href="https://operand.ai/personal/settings" target="_blank">
+            <a href="https://operand.ai/personal/sources" target="_blank">
               <button className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded text-gray-700 bg-white hover:bg-gray-200">
                 Change Settings
               </button>
