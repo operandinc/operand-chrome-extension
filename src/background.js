@@ -23,7 +23,9 @@ async function syncSettings(token) {
         "Content-Type": "application/json",
         Authorization: token,
       },
-      body: JSON.stringify({}),
+      body: JSON.stringify({
+        version: 1.5,
+      }),
     }
   );
   // Check for 200
