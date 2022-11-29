@@ -12,7 +12,6 @@ import '../content.styles.css';
 export const Google: React.FC<{
   query: string;
 }> = ({ query }) => {
-  const [apiKey, setApiKey] = React.useState<string>('');
   const [searchResponse, setSearchResponse] =
     React.useState<SearchResponse | null>(null);
   enum Status {
@@ -28,15 +27,12 @@ export const Google: React.FC<{
       if (!key) {
         return null;
       }
-      setApiKey(key);
-
       // Fire the search
       const client = operandClient(
         OperandService,
         key,
         'https://api.operand.ai'
       );
-
       const searchResponse = await client.search({
         query: query,
         limit: 2,
@@ -49,7 +45,7 @@ export const Google: React.FC<{
     }
 
     onLoad();
-  }, [apiKey, query]);
+  }, [query]);
 
   React.useEffect(() => {
     if (searchResponse) {
@@ -70,7 +66,7 @@ export const Google: React.FC<{
   }, [searchResponse]);
 
   return (
-    <div className={`${!apiKey ? 'hidden' : ''}`}>
+    <div>
       {/* Operand Section */}
       <div className="w-full h-40 pb-3 overflow:hidden">
         <div className="h-6 pb-1 text-base text-black dark:text-white ">
