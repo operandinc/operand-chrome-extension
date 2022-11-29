@@ -110,7 +110,11 @@ export const Google: React.FC<{
                     .map((result, i) => (
                       <div className="text-sm truncate" key={i}>
                         <a
-                          href={`https://beta.operand.ai/indexes/${result.indexId}/objects/${result.objectId}`}
+                          href={
+                            searchResponse?.objects[result.objectId].preview
+                              ?.url ||
+                            `https://beta.operand.ai/indexes/${result.indexId}/${result.objectId}`
+                          }
                           target="_blank"
                           rel="noopener noreferrer"
                           className="link text-sm truncate h-5"
