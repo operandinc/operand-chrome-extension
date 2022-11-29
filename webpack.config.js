@@ -1,72 +1,241 @@
-const path = require("path");
-const HtmlWebpackPlugin = require("html-webpack-plugin");
-const CopyWebpackPlugin = require("copy-webpack-plugin");
-const { CleanWebpackPlugin } = require("clean-webpack-plugin");
+var webpack = require("webpack"),
+  path = require("path"),
+  fileSystem = require("fs-extra"),
+  env = require("./utils/env"),
+  CopyWebpackPlugin = require("copy-webpack-plugin"),
+  HtmlWebpackPlugin = require("html-webpack-plugin"),
+  TerserPlugin = require("terser-webpack-plugin");
+var { CleanWebpackPlugin } = require("clean-webpack-plugin");
 
-module.exports = {
-  mode: "production",
-  devServer: {
-    contentBase: path.resolve(__dirname, "./src"),
-    historyApiFallback: true,
-  },
+const ASSET_PATH = process.env.ASSET_PATH || "/";
+
+var alias = {
+  "react-dom": "@hot-loader/react-dom",
+};
+
+// load the secrets
+var secretsPath = path.join(__dirname, "secrets." + env.NODE_ENV + ".js");
+
+var fileExtensions = [
+  "jpg",
+  "jpeg",
+  "png",
+  "gif",
+  "eot",
+  "otf",
+  "svg",
+  "ttf",
+  "woff",
+  "woff2",
+];
+
+if (fileSystem.existsSync(secretsPath)) {
+  alias["secrets"] = secretsPath;
+}
+
+var options = {
+  mode: process.env.NODE_ENV || "development",
   entry: {
-    popup: path.resolve(__dirname, "./src/index-popup.js"),
-    options: path.resolve(__dirname, "./src/index-options.js"),
-    content: path.resolve(__dirname, "./src/index-content.js"),
+    newtab: path.join(__dirname, "src", "pages", "Newtab", "index.jsx"),
+    options: path.join(__dirname, "src", "pages", "Options", "index.jsx"),
+    popup: path.join(__dirname, "src", "pages", "Popup", "index.jsx"),
+    background: path.join(__dirname, "src", "pages", "Background", "index.ts"),
+    contentScript: path.join(__dirname, "src", "pages", "Content", "index.ts"),
+    devtools: path.join(__dirname, "src", "pages", "Devtools", "index.ts"),
+    panel: path.join(__dirname, "src", "pages", "Panel", "index.jsx"),
+  },
+  chromeExtensionBoilerplate: {
+    notHotReload: ["background", "contentScript", "devtools"],
   },
   output: {
     filename: "[name].bundle.js",
-    path: path.resolve(__dirname, "dist"),
-    // publicPath: '/dist'
+    path: path.resolve(__dirname, "build"),
+    clean: true,
+    publicPath: ASSET_PATH,
   },
+  devtool: "source-map",
   module: {
     rules: [
-      {
-        test: /\.js$/,
-        use: [
-          {
-            loader: "babel-loader",
-            options: {
-              presets: [
-                "@babel/preset-env",
-                "@babel/preset-react",
-                {
-                  plugins: ["@babel/plugin-proposal-class-properties"],
-                },
-              ],
-            },
-          },
-        ],
-      },
       {
         test: /\.css$/i,
         include: path.resolve(__dirname, "src"),
         use: ["style-loader", "css-loader", "postcss-loader"],
       },
       {
+        test: new RegExp(".(" + fileExtensions.join("|") + ")$"),
+        type: "asset/resource",
+        exclude: /node_modules/,
+        // loader: 'file-loader',
+        // options: {
+        //   name: '[name].[ext]',
+        // },
+      },
+      {
         test: /\.html$/,
-        use: ["html-loader"],
+        loader: "html-loader",
+        exclude: /node_modules/,
+      },
+      { test: /\.(ts|tsx)$/, loader: "ts-loader", exclude: /node_modules/ },
+      {
+        test: /\.(js|jsx)$/,
+        use: [
+          {
+            loader: "source-map-loader",
+          },
+          {
+            loader: "babel-loader",
+          },
+        ],
+        exclude: /node_modules/,
       },
     ],
   },
+  resolve: {
+    alias: alias,
+    extensions: fileExtensions
+      .map((extension) => "." + extension)
+      .concat([".js", ".jsx", ".ts", ".tsx"]),
+  },
+
   plugins: [
-    new HtmlWebpackPlugin({
-      filename: "popup.html",
-      template: "src/popup.html",
-      chunks: ["popup"],
+    new CleanWebpackPlugin({
+      cleanOnceBeforeBuildPatterns: [
+        "*",
+        "!tailwind.dist.css",
+        "!tailwindPreflight.css",
+      ],
+      verbose: false,
     }),
-    new HtmlWebpackPlugin({
-      filename: "options.html",
-      template: "src/options.html",
-      chunks: ["options"],
+    new webpack.ProgressPlugin(),
+    // expose and write the allowed env vars on the compiled bundle
+    new webpack.EnvironmentPlugin(["NODE_ENV"]),
+    new CopyWebpackPlugin({
+      patterns: [
+        {
+          from: "src/manifest.json",
+          to: path.join(__dirname, "build"),
+          force: true,
+          transform: function (content, path) {
+            // generates the manifest file using the package.json informations
+            return Buffer.from(
+              JSON.stringify({
+                description: process.env.npm_package_description,
+                version: process.env.npm_package_version,
+                ...JSON.parse(content.toString()),
+              })
+            );
+          },
+        },
+      ],
     }),
     new CopyWebpackPlugin({
       patterns: [
-        { from: "src/manifest.json", to: "[name][ext]" },
-        { from: "src/*.png", to: "[name][ext]" },
-        { from: "src/background.js", to: "[name][ext]" },
+        {
+          from: "src/pages/Content/content.styles.css",
+          to: path.join(__dirname, "build"),
+          force: true,
+        },
+        {
+          from: "src/tailwindPreflight.css",
+          to: path.join(__dirname, "build"),
+          force: true,
+        },
+        {
+          from: "src/pages/Newtab/Newtab.css",
+          to: path.join(__dirname, "build"),
+          force: true,
+        },
+        {
+          from: "src/pages/Options/Options.css",
+          to: path.join(__dirname, "build"),
+          force: true,
+        },
+        {
+          from: "src/pages/Popup/Popup.css",
+          to: path.join(__dirname, "build"),
+          force: true,
+        },
+        {
+          from: "src/pages/Panel/Panel.css",
+          to: path.join(__dirname, "build"),
+          force: true,
+        },
       ],
     }),
-    new CleanWebpackPlugin(),
+    new CopyWebpackPlugin({
+      patterns: [
+        {
+          from: "src/assets/img/16.png",
+          to: path.join(__dirname, "build"),
+          force: true,
+        },
+      ],
+    }),
+    new CopyWebpackPlugin({
+      patterns: [
+        {
+          from: "src/assets/img/48.png",
+          to: path.join(__dirname, "build"),
+          force: true,
+        },
+      ],
+    }),
+    new CopyWebpackPlugin({
+      patterns: [
+        {
+          from: "src/assets/img/128.png",
+          to: path.join(__dirname, "build"),
+          force: true,
+        },
+      ],
+    }),
+    new HtmlWebpackPlugin({
+      template: path.join(__dirname, "src", "pages", "Newtab", "index.html"),
+      filename: "newtab.html",
+      chunks: ["newtab"],
+      cache: false,
+    }),
+    new HtmlWebpackPlugin({
+      template: path.join(__dirname, "src", "pages", "Options", "index.html"),
+      filename: "options.html",
+      chunks: ["options"],
+      cache: false,
+    }),
+    new HtmlWebpackPlugin({
+      template: path.join(__dirname, "src", "pages", "Popup", "index.html"),
+      filename: "popup.html",
+      chunks: ["popup"],
+      cache: false,
+    }),
+    new HtmlWebpackPlugin({
+      template: path.join(__dirname, "src", "pages", "Devtools", "index.html"),
+      filename: "devtools.html",
+      chunks: ["devtools"],
+      cache: false,
+    }),
+    new HtmlWebpackPlugin({
+      template: path.join(__dirname, "src", "pages", "Panel", "index.html"),
+      filename: "panel.html",
+      chunks: ["panel"],
+      cache: false,
+    }),
   ],
+  infrastructureLogging: {
+    level: "info",
+  },
 };
+
+if (env.NODE_ENV === "development") {
+  options.devtool = "cheap-module-source-map";
+} else {
+  options.optimization = {
+    minimize: true,
+    minimizer: [
+      new TerserPlugin({
+        extractComments: false,
+      }),
+    ],
+  };
+}
+
+module.exports = options;

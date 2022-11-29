@@ -1,27 +1,33 @@
 {
-  "name": "Operand Extension",
-  "description": "Provides functionality for indexing webpages to Operand",
-  "version": "0.1.5",
+  "name": "Operand",
+  "description": "Build and share knowledge!",
+  "version": "0.0.1",
   "manifest_version": 3,
   "icons": {
-    "16": "./16.png",
-    "48": "./48.png",
-    "128": "./128.png"
+    "16": "16.png",
+    "48": "48.png",
+    "128": "128.png"
   },
-  "options_page": "./options.html",
+  "omnibox": { "keyword": "operand" },
+  "chrome_url_overrides": {
+    "newtab": "newtab.html"
+  },
   "action": {
     "default_popup": "popup.html",
     "default_title": "Save to Operand"
   },
+  "options_page": "options.html",
   "content_scripts": [
     {
       "matches": ["https://www.google.com/search*"],
-      "js": ["content.bundle.js"],
+      "js": ["contentScript.bundle.js"],
+      "css": ["content.styles.css"],
       "run_at": "document_end"
     }
   ],
+
   "permissions": ["tabs", "storage", "history"],
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "background.bundle.js"
   }
 }

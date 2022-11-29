@@ -1,11 +1,19 @@
 module.exports = {
-  content: ["./src/components/*.{js,jsx,ts,tsx}"],
+  content: ['./src/**/**/*.{html,js,tsx,jsx,ts}'],
   theme: {
     extend: {},
   },
+  variants: {},
+  corePlugins: {
+    preflight: false,
+  },
   plugins: [
-    require("@tailwindcss/forms"),
-    require("tailwind-scrollbar-hide"),
-    require("@tailwindcss/line-clamp"),
+    require('daisyui'),
+    require('@tailwindcss/typography'),
+    require('@tailwindcss/line-clamp'),
   ],
+  daisyui: {
+    themes: ['cmyk', 'dracula'],
+    darkMode: 'dracula',
+  },
 };
