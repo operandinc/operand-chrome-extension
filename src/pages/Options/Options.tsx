@@ -239,8 +239,13 @@ const Options: React.FC = () => {
               <button
                 onClick={async () => {
                   if (domain !== '') {
+                    var hostname = domain;
+                    // Strip www. from the domain
+                    if (domain.startsWith('www.')) {
+                      hostname = domain.substring(4);
+                    }
                     await addRule({
-                      domain,
+                      domain: hostname,
                       type: 'BLOCK',
                     });
                     const rules = await getRules();

@@ -70,15 +70,17 @@ chrome.tabs.onUpdated.addListener(async function (tabId, changeInfo, tab) {
       if (rules) {
         console.log('Rules', rules);
         for (const rule of rules) {
-          // Get the domain
           const url = new URL(tab.url!);
-          // If the domain matches the rule
-          // maybe add a bunch of print statements and debug?
-          if (
-            url.host === rule.domain ||
-            url.hostname === rule.domain ||
-            url.origin === rule.domain
-          ) {
+          var host = url.host;
+
+          if (host.startsWith('www.')) {
+            host = host.substring(4);
+          }
+          var hostname = url.hostname;
+          if (hostname.startsWith('www.')) {
+            hostname = hostname.substring(4);
+          }
+          if (host === rule.domain || hostname === rule.domain) {
             blocked = true;
           }
         }
