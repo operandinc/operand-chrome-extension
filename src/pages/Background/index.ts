@@ -35,7 +35,7 @@ chrome.runtime.onInstalled.addListener(async () => {
 // Ombnibox
 chrome.omnibox.onInputEntered.addListener(function (text) {
   if (!text) return;
-  var newURL = 'http://beta.operand.ai/feed?q=' + text;
+  var newURL = 'https://operand.ai/feed?q=' + text;
   chrome.tabs.create({ url: newURL });
 });
 

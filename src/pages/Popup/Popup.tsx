@@ -51,7 +51,7 @@ const Popup = () => {
   function search() {
     if (query !== '') {
       chrome.tabs.create({
-        url: `http://beta.operand.ai/feed?q=${query}`,
+        url: `https://operand.ai/feed?q=${query}`,
       });
     }
   }
