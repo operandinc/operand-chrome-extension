@@ -105,7 +105,7 @@ const Options: React.FC = () => {
                   className="link"
                   onClick={() =>
                     chrome.tabs.create({
-                      url: 'https://beta.operand.ai/profile',
+                      url: 'https://operand.ai/profile',
                     })
                   }
                 >

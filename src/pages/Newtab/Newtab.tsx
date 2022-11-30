@@ -110,7 +110,7 @@ const Newtab = () => {
               <div className="prose">
                 <h2>the latest from your corner of the internet</h2>
               </div>
-              <a href="https://beta.operand.ai/profile">
+              <a href="https://operand.ai/profile">
                 <div className="btn btn-outline btn-square">
                   <UserIcon className="w-5 h-5" aria-hidden="true" />
                 </div>
@@ -153,7 +153,7 @@ const Newtab = () => {
                   <div className="card card-compact" key={i}>
                     <div className="card-body w-full">
                       <a
-                        href={`https://beta.operand.ai/indexes/${result.indexId}/${result.objectId}`}
+                        href={`https://operand.ai/indexes/${result.indexId}/${result.objectId}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="hover:cursor-pointer"
@@ -161,7 +161,7 @@ const Newtab = () => {
                         <p className="text-lg">{result.content}</p>
                       </a>
                       <a
-                        href={`https://beta.operand.ai/indexes/${result.indexId}`}
+                        href={`https://operand.ai/indexes/${result.indexId}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex-none"
@@ -186,7 +186,7 @@ const Newtab = () => {
                         <div className="card-body">
                           <h2 className="card-title flex justify-between">
                             <a
-                              href={`https://beta.operand.ai/indexes/${result.indexId}/${result.object?.id}`}
+                              href={`https://operand.ai/indexes/${result.indexId}/${result.object?.id}`}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="link"
@@ -194,7 +194,7 @@ const Newtab = () => {
                               {result.object?.preview?.title}
                             </a>
                             <a
-                              href={`https://beta.operand.ai/indexes/${result.indexId}`}
+                              href={`https://operand.ai/indexes/${result.indexId}`}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="flex-none"

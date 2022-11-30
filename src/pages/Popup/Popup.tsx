@@ -88,7 +88,7 @@ const Popup = () => {
               className="btn btn-outline btn-square"
               onClick={() => {
                 chrome.tabs.create({
-                  url: `https://beta.operand.ai/profile`,
+                  url: `https://operand.ai/profile`,
                 });
               }}
             >

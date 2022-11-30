@@ -109,7 +109,7 @@ export const Google: React.FC<{
                           href={
                             searchResponse?.objects[result.objectId].preview
                               ?.url ||
-                            `https://beta.operand.ai/indexes/${result.indexId}/${result.objectId}`
+                            `https://operand.ai/indexes/${result.indexId}/${result.objectId}`
                           }
                           target="_blank"
                           rel="noopener noreferrer"
@@ -137,7 +137,7 @@ export const Google: React.FC<{
                   href={
                     searchResponse?.objects[searchResponse.results[0].objectId]
                       .preview?.url ||
-                    `https://beta.operand.ai/indexes${searchResponse?.results[0].indexId}/${searchResponse?.results[0].objectId}`
+                    `https://operand.ai/indexes${searchResponse?.results[0].indexId}/${searchResponse?.results[0].objectId}`
                   }
                   className="flex-grow text-blue-400 hover:underline hover:cursor-pointer text-lg truncate h-6"
                 >
@@ -155,7 +155,7 @@ export const Google: React.FC<{
               <div className="w-full h-5 pb-1">
                 <div className="text-sm truncate">
                   <a
-                    href={`https://beta.operand.ai/indexes/${searchResponse?.results[0].indexId}`}
+                    href={`https://operand.ai/indexes/${searchResponse?.results[0].indexId}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex-none text-blue-400 hover:underline hover:cursor-pointer truncate h-5"

@@ -45,7 +45,7 @@ const ignorePrefixes = [
   'about:',
   'http://localhost',
   'https://www.google.com/search',
-  'https://beta.operand.ai/',
+  'https://operand.ai/',
 ];
 
 // New Tab
