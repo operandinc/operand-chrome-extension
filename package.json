@@ -6,7 +6,8 @@
   "scripts": {
     "watch:tailwind": "npx postcss src/tailwind.css -o build/tailwind.dist.css -w",
     "build:tailwind": "npx postcss src/tailwind.css -o build/tailwind.dist.css",
-    "build": "node utils/build.js && npm run build:tailwind",
+    "zip": "rm -f build.zip && zip -r build.zip build",
+    "build": "node utils/build.js && npm run build:tailwind && npm run zip",
     "start": "concurrently \"npm run watch:tailwind\" \"node utils/webserver.js\"",
     "prettier": "prettier --write '**/*.{js,jsx,ts,tsx,json,css,scss,md}'"
   },
