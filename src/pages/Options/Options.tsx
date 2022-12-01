@@ -21,7 +21,6 @@ const Options: React.FC = () => {
   const [data, setData] = React.useState<Settings>({
     apiKey: '',
     searchInjectionEnabled: false,
-    newTabFeedEnabled: false,
     automaticIndexingEnabled: false,
     automaticIndexingDestination: '',
     manualIndexingMostRecentDestination: '',
@@ -146,23 +145,6 @@ const Options: React.FC = () => {
                     }}
                     className="toggle toggle-success"
                     checked={data.searchInjectionEnabled}
-                  />
-                  <h3>New Tab Feed</h3>
-                  <p>
-                    See the latest from your corner of the internet on new tabs
-                    in Chrome.
-                  </p>
-                  <input
-                    type="checkbox"
-                    onChange={async (e) => {
-                      await setSetting('newTabFeedEnabled', e.target.checked);
-                      const settings = await getSettings();
-                      if (settings) {
-                        setData(settings);
-                      }
-                    }}
-                    className="toggle toggle-success"
-                    checked={data.newTabFeedEnabled}
                   />
                   <h3>Automatic Indexing</h3>
                   <p>

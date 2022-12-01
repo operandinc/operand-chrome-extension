@@ -3,15 +3,8 @@
 // - installs
 // - uninstalls
 // - omnibox events and queries
-// - newtab redirects
 
-import {
-  getApiKey,
-  getRules,
-  getSetting,
-  getSettings,
-  setSettings,
-} from '../../storage';
+import { getApiKey, getRules, getSettings, setSettings } from '../../storage';
 import { operandClient, ObjectService, ObjectType } from '@operandinc/sdk';
 
 // On Install
@@ -25,7 +18,6 @@ chrome.runtime.onInstalled.addListener(async () => {
       searchInjectionEnabled: true,
       automaticIndexingDestination: '',
       automaticIndexingEnabled: false,
-      newTabFeedEnabled: false,
       manualIndexingMostRecentDestination: '',
     });
   }
@@ -51,20 +43,8 @@ const ignorePrefixes = [
   'https://operand.ai/',
 ];
 
-// New Tab
 chrome.tabs.onUpdated.addListener(async function (tabId, changeInfo, tab) {
-  // If this is a new tab
-  if (tab.url === 'chrome://newtab/') {
-    // Get the settings
-    const newTabFeedEnabled = await getSetting('newTabFeedEnabled');
-    // If the new tab redirect is disabled
-    if (newTabFeedEnabled !== true) {
-      // Redirect to the regular new tab page
-      chrome.tabs.update(tabId, {
-        url: 'chrome-search://local-ntp/local-ntp.html',
-      });
-    }
-  } else if (changeInfo.status === 'complete') {
+  if (changeInfo.status === 'complete') {
     if (ignorePrefixes.some((prefix) => tab.url?.startsWith(prefix))) {
       return;
     }

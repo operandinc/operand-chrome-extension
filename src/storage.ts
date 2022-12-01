@@ -5,14 +5,12 @@ export type Settings = {
   automaticIndexingEnabled: boolean;
   automaticIndexingDestination: string;
   searchInjectionEnabled: boolean;
-  newTabFeedEnabled: boolean;
   manualIndexingMostRecentDestination: string;
 };
 
 async function validateSettings(settings: Settings) {
   const booleanSettings: (keyof Settings)[] = [
     'searchInjectionEnabled',
-    'newTabFeedEnabled',
     'automaticIndexingEnabled',
   ];
   const stringSettings: (keyof Settings)[] = [
@@ -116,12 +114,6 @@ export async function setSetting(key: keyof Settings, value: any) {
         return false;
       }
       settings.searchInjectionEnabled = value;
-      break;
-    case 'newTabFeedEnabled':
-      if (typeof value !== 'boolean') {
-        return false;
-      }
-      settings.newTabFeedEnabled = value;
       break;
     case 'apiKey':
       if (typeof value !== 'string') {
