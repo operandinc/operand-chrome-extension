@@ -17,15 +17,18 @@ import { operandClient, ObjectService, ObjectType } from '@operandinc/sdk';
 // On Install
 chrome.runtime.onInstalled.addListener(async () => {
   console.log('Installed!');
-  // Set some default settings
-  await setSettings({
-    apiKey: '',
-    searchInjectionEnabled: true,
-    automaticIndexingDestination: '',
-    automaticIndexingEnabled: false,
-    newTabFeedEnabled: true,
-    manualIndexingMostRecentDestination: '',
-  });
+  const settings = await getSettings();
+  if (!settings) {
+    // Set defaults
+    await setSettings({
+      apiKey: '',
+      searchInjectionEnabled: true,
+      automaticIndexingDestination: '',
+      automaticIndexingEnabled: false,
+      newTabFeedEnabled: false,
+      manualIndexingMostRecentDestination: '',
+    });
+  }
   // If the token is not set, open the options page
   const token = await getApiKey();
   if (!token || token === '') {
