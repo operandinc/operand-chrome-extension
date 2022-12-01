@@ -15,6 +15,7 @@ export const Google: React.FC<{
   const [searchResponse, setSearchResponse] =
     React.useState<SearchResponse | null>(null);
   enum Status {
+    NOKEY,
     LOADING,
     ANSWER,
     RESULTS,
@@ -25,6 +26,7 @@ export const Google: React.FC<{
     async function onLoad() {
       var key = await getApiKey();
       if (!key) {
+        setStatus(Status.NOKEY);
         return null;
       }
       // Fire the search
@@ -74,7 +76,22 @@ export const Google: React.FC<{
         </div>
 
         <div className="w-full h-28">
-          {status === Status.LOADING ? (
+          {status === Status.NOKEY ? (
+            <div className="flex  flex-col items-center justify-center w-full h-28">
+              <p>To get search results you need to set your API Key</p>
+              <button
+                className="btn btn-primary"
+                onClick={() => {
+                  // Send a message to the background script to open the options page
+                  chrome.runtime.sendMessage({
+                    type: 'openOptions',
+                  });
+                }}
+              >
+                Set Key
+              </button>
+            </div>
+          ) : status === Status.LOADING ? (
             <div className="flex items-center justify-center w-full h-28">
               <p>Loading ...</p>
             </div>

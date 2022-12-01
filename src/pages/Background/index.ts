@@ -125,3 +125,14 @@ chrome.tabs.onUpdated.addListener(async function (tabId, changeInfo, tab) {
     );
   }
 });
+
+// Listen for messages from content script
+chrome.runtime.onMessage.addListener(async function (
+  request,
+  sender,
+  sendResponse
+) {
+  if (request.type === 'openOptions') {
+    chrome.runtime.openOptionsPage();
+  }
+});
