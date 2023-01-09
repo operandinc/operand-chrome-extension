@@ -1,11 +1,11 @@
 import {
+  ContentSnippet,
   operandClient,
   OperandService,
   SearchResponse,
-  SearchResponse_Result,
 } from '@operandinc/sdk';
 import * as React from 'react';
-import { getApiKey } from '../../../storage';
+import { getApiKey, getTeamData, setActiveTeamId } from '../../../storage';
 
 import '../content.styles.css';
 
@@ -14,6 +14,15 @@ export const Google: React.FC<{
 }> = ({ query }) => {
   const [searchResponse, setSearchResponse] =
     React.useState<SearchResponse | null>(null);
+  const [teams, setTeams] = React.useState<
+    {
+      name: string;
+      indexPublicId: string;
+    }[]
+  >([]);
+  const [activeTeam, setActiveTeam] = React.useState<string | undefined>(
+    undefined
+  );
   enum Status {
     NOKEY,
     LOADING,
@@ -22,6 +31,26 @@ export const Google: React.FC<{
     ERROR,
   }
   const [status, setStatus] = React.useState<Status>(Status.LOADING);
+  const search = async (query: string, indexId?: string) => {
+    var key = await getApiKey();
+    if (!key) {
+      setStatus(Status.NOKEY);
+      return null;
+    }
+    // Fire the search
+    const client = operandClient(OperandService, key, 'https://api.operand.ai');
+    const searchResponse = await client.search({
+      query: query,
+      limit: 2,
+      indexIds: indexId ? [indexId] : undefined,
+      attemptAnswer: false,
+      objectOptions: {
+        includePreview: true,
+      },
+    });
+    setSearchResponse(searchResponse);
+  };
+
   React.useEffect(() => {
     async function onLoad() {
       var key = await getApiKey();
@@ -29,25 +58,17 @@ export const Google: React.FC<{
         setStatus(Status.NOKEY);
         return null;
       }
-      // Fire the search
-      const client = operandClient(
-        OperandService,
-        key,
-        'https://api.operand.ai'
-      );
-      const searchResponse = await client.search({
-        query: query,
-        limit: 2,
-        attemptAnswer: true,
-        objectOptions: {
-          includePreview: true,
-        },
-      });
-      setSearchResponse(searchResponse);
+      const teamData = await getTeamData();
+      if (teamData) {
+        setTeams(teamData.teams);
+        setActiveTeam(teamData.activeTeamId);
+        await search(query, teamData.activeTeamId);
+      } else {
+        await search(query);
+      }
     }
-
     onLoad();
-  }, [query]);
+  }, [query, Status.NOKEY]);
 
   React.useEffect(() => {
     if (searchResponse) {
@@ -71,8 +92,34 @@ export const Google: React.FC<{
     <div>
       {/* Operand Section */}
       <div className="w-full h-40 pb-3 overflow:hidden">
-        <div className="h-6 pb-1 text-base text-black dark:text-white ">
-          Operand Result:
+        <div className="flex justify-between items-center h-6 pb-1 text-base text-black dark:text-white ">
+          <p>Operand Results:</p>
+          {teams.length > 0 && (
+            <select
+              className="text-sm text-black dark:text-white bg-transparent border-none"
+              onChange={async (e) => {
+                setStatus(Status.LOADING);
+                setActiveTeam(
+                  e.target.value === 'undefined' ? undefined : e.target.value
+                );
+                search(
+                  query,
+                  e.target.value === 'undefined' ? undefined : e.target.value
+                );
+                setActiveTeamId(
+                  e.target.value === 'undefined' ? undefined : e.target.value
+                );
+              }}
+              value={activeTeam}
+            >
+              <option value={'undefined'}>select team</option>
+              {teams.map((team) => (
+                <option key={team.indexPublicId} value={team.indexPublicId}>
+                  {team.name}
+                </option>
+              ))}
+            </select>
+          )}
         </div>
 
         <div className="w-full h-28">
@@ -111,7 +158,7 @@ export const Google: React.FC<{
                 {/* Deduped results */}
                 {searchResponse?.results &&
                   searchResponse.results
-                    .reduce((acc: SearchResponse_Result[], result) => {
+                    .reduce((acc: ContentSnippet[], result) => {
                       if (
                         result.objectId &&
                         !acc.find((r) => r.objectId === result.objectId)

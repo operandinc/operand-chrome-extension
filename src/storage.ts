@@ -195,3 +195,40 @@ export async function removeRule(rule: Rule) {
   await setRules(rules);
   return true;
 }
+
+export type TeamData = {
+  activeTeamId?: string;
+  teams: {
+    name: string;
+    indexPublicId: string;
+  }[];
+};
+
+export async function getTeamData() {
+  const storage = await chrome.storage.sync.get('teamData');
+  // Assert that the teamData object exists
+  if (!storage) {
+    return null;
+  }
+  const teamData: TeamData = storage.teamData;
+  // Validate the teamData object
+  if (teamData && typeof teamData === 'object') {
+    return teamData;
+  } else {
+    return null;
+  }
+}
+
+export async function setTeamData(teamData: TeamData) {
+  await chrome.storage.sync.set({ teamData });
+}
+
+export async function setActiveTeamId(id: string | undefined) {
+  const teamData = await getTeamData();
+  if (!teamData) {
+    return false;
+  }
+  teamData.activeTeamId = id;
+  await setTeamData(teamData);
+  return true;
+}

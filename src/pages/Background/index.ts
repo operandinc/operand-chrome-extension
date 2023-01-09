@@ -4,8 +4,21 @@
 // - uninstalls
 // - omnibox events and queries
 
-import { getApiKey, getRules, getSettings, setSettings } from '../../storage';
-import { operandClient, ObjectService, ObjectType } from '@operandinc/sdk';
+import {
+  getApiKey,
+  getRules,
+  getSettings,
+  setSettings,
+  getTeamData,
+  setTeamData,
+} from '../../storage';
+import {
+  operandClient,
+  ObjectService,
+  ObjectType,
+  IndexService,
+  Index,
+} from '@operandinc/sdk';
 
 // On Install
 chrome.runtime.onInstalled.addListener(async () => {
@@ -51,7 +64,6 @@ chrome.tabs.onUpdated.addListener(async function (tabId, changeInfo, tab) {
     var blocked = false;
     await getRules().then((rules) => {
       if (rules) {
-        console.log('Rules', rules);
         for (const rule of rules) {
           const url = new URL(tab.url!);
           var host = url.host;
@@ -136,3 +148,75 @@ chrome.runtime.onMessage.addListener(async function (
     chrome.runtime.openOptionsPage();
   }
 });
+
+async function checkTeams() {
+  // We want to check if the user has any teams
+  const settings = await getSettings();
+  if (!settings) {
+    return;
+  }
+  if (!settings.apiKey) {
+    return;
+  }
+  const client = operandClient(
+    IndexService,
+    settings.apiKey,
+    'https://api.operand.ai'
+  );
+  const response = await client.listIndexes({});
+
+  const teamIndexes = response.indexes.filter(isLikelyTeamIndex);
+
+  if (teamIndexes.length > 0) {
+    // We have team indexes
+    // We want to store these in the teams data structure
+    const data = await getTeamData();
+    if (data) {
+      // Check all the existing teams in the data structure to see if they are still valid
+      data.teams = data.teams.filter((team) => {
+        return teamIndexes.some(
+          (index) => index.publicId === team.indexPublicId
+        );
+      });
+      // Add any new teams
+      teamIndexes.forEach((index) => {
+        if (!data.teams.some((team) => team.indexPublicId === index.publicId)) {
+          data.teams.push({
+            name: index.name,
+            indexPublicId: index.publicId,
+          });
+        }
+      });
+      await setTeamData(data);
+    } else {
+      // We have no team data
+      await setTeamData({
+        teams: teamIndexes.map((index) => {
+          return {
+            name: index.name,
+            indexPublicId: index.publicId,
+          };
+        }),
+      });
+    }
+  } else {
+    // We have no team indexes
+    // We want to clear the team data
+    await setTeamData({
+      activeTeamId: undefined,
+      teams: [],
+    });
+  }
+}
+
+// On load
+chrome.runtime.onStartup.addListener(async () => {
+  console.log('Startup!');
+  await checkTeams();
+});
+
+// Checks if an index is likely to be the team's index.
+// This is a heuristic, and not guaranteed to be correct.
+export function isLikelyTeamIndex(index: Index): boolean {
+  return !index.public && index.name.startsWith('(Team)');
+}
