@@ -11,7 +11,7 @@ getSearchInjectionEnabled().then((enabled) => {
     let reactJS_script = document.createElement('script');
     content_entry_point.id = 'operand-content';
     content_entry_point.appendChild(reactJS_script);
-    // Insert the content entry point into the DOM as the first child of topstuff.
+    // Insert the content entry point into the DOM as the last child of topstuff.
     document.getElementById('topstuff')?.appendChild(content_entry_point);
     // Get the q parameter from the URL
     const urlParams = new URLSearchParams(window.location.search);
@@ -20,8 +20,10 @@ getSearchInjectionEnabled().then((enabled) => {
     if (!q) {
       return;
     }
-    console.log('Rendering content component');
     // Render the content component
-    render(React.createElement(Google, { query: q }), content_entry_point);
+    render(
+      React.createElement(Google, { query: q, defaultResults: 1 }),
+      content_entry_point
+    );
   }
 });

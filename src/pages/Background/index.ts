@@ -4,14 +4,7 @@
 // - uninstalls
 // - omnibox events and queries
 
-import {
-  getApiKey,
-  getRules,
-  getSettings,
-  setSettings,
-  getTeamData,
-  setTeamData,
-} from '../../storage';
+import { getApiKey, getRules, getSettings, setSettings } from '../../storage';
 import {
   operandClient,
   ObjectService,
@@ -20,6 +13,7 @@ import {
   Index,
 } from '@operandinc/sdk';
 
+export const endpoint = 'https://api.operand.ai';
 // On Install
 chrome.runtime.onInstalled.addListener(async () => {
   console.log('Installed!');
@@ -95,11 +89,7 @@ chrome.tabs.onUpdated.addListener(async function (tabId, changeInfo, tab) {
       return;
     }
     // Send the url to the destination index
-    const client = operandClient(
-      ObjectService,
-      settings.apiKey,
-      'https://api.operand.ai'
-    );
+    const client = operandClient(ObjectService, settings.apiKey, endpoint);
     if (!tab.url) {
       return;
     }
@@ -158,11 +148,7 @@ async function checkTeams() {
   if (!settings.apiKey) {
     return;
   }
-  const client = operandClient(
-    IndexService,
-    settings.apiKey,
-    'https://api.operand.ai'
-  );
+  const client = operandClient(IndexService, settings.apiKey, endpoint);
   const response = await client.listIndexes({});
 
   const teamIndexes = response.indexes.filter(isLikelyTeamIndex);

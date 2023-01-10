@@ -1,4 +1,4 @@
-// Function to interact with the storage
+// Functions to interact with the browser storage
 
 export type Settings = {
   apiKey: string;
@@ -196,39 +196,42 @@ export async function removeRule(rule: Rule) {
   return true;
 }
 
-export type TeamData = {
-  activeTeamId?: string;
-  teams: {
-    name: string;
-    indexPublicId: string;
-  }[];
+export type StoredIndex = {
+  indexId: string;
+  name: string;
+  team: boolean;
 };
 
-export async function getTeamData() {
-  const storage = await chrome.storage.sync.get('teamData');
-  // Assert that the teamData object exists
+export type IndexData = {
+  activeIndex?: string;
+  indexes: StoredIndex[];
+};
+
+export async function getIndexData() {
+  const storage = await chrome.storage.sync.get('indexData');
+  // Assert that the indexData object exists
   if (!storage) {
     return null;
   }
-  const teamData: TeamData = storage.teamData;
-  // Validate the teamData object
-  if (teamData && typeof teamData === 'object') {
-    return teamData;
+  const indexData: IndexData = storage.indexData;
+  // Validate the indexData object
+  if (indexData && typeof indexData === 'object') {
+    return indexData;
   } else {
     return null;
   }
 }
 
-export async function setTeamData(teamData: TeamData) {
-  await chrome.storage.sync.set({ teamData });
+export async function setIndexData(indexData: IndexData) {
+  await chrome.storage.sync.set({ indexData });
 }
 
-export async function setActiveTeamId(id: string | undefined) {
-  const teamData = await getTeamData();
-  if (!teamData) {
+export async function setActiveIndex(indexId?: string) {
+  const indexData = await getIndexData();
+  if (!indexData) {
     return false;
   }
-  teamData.activeTeamId = id;
-  await setTeamData(teamData);
+  indexData.activeIndex = indexId;
+  await setIndexData(indexData);
   return true;
 }
