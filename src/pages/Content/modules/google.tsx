@@ -4,15 +4,19 @@ import {
   HTMLMetadata,
   Index,
   ObjectPreview,
+  ObjectType,
   operandClient,
   OperandService,
+  Properties,
   SearchResponse,
 } from '@operandinc/sdk';
 import * as React from 'react';
 import { getApiKey, getIndexData, StoredIndex } from '../../../storage';
-import { endpoint } from '../../Background';
-
+import { CardMap } from '../cardmap';
 import '../content.styles.css';
+import { LoadingCard } from './cards';
+
+const endpoint = 'https://api.operand.ai';
 
 enum Status {
   NOKEY,
@@ -30,28 +34,19 @@ async function search(query: string, indexId?: string) {
   const client = operandClient(OperandService, key, endpoint);
   const searchResponse = await client.search({
     query: query,
-    limit: 5,
+    limit: 8,
     indexIds: indexId ? [indexId] : undefined,
     attemptAnswer: false,
     objectOptions: {
       includePreview: true,
     },
   });
+  console.log(searchResponse);
   return searchResponse;
 }
 
-// Displays a card for a result
-const htmlResultCard: React.FC<{
-  result: ContentSnippet;
-  preview: ObjectPreview;
-  metadata: HTMLMetadata;
-  index: Index;
-}> = ({ result, preview, metadata, index }) => {
-  return <div></div>;
-};
-
 // Not used right now but will be used to display a card for an answer
-const answerCard: React.FC<{
+const AnswerCard: React.FC<{
   answer: Answer;
 }> = ({ answer }) => {
   return <div></div>;
@@ -63,13 +58,12 @@ const answerCard: React.FC<{
 export const Google: React.FC<{
   query: string;
   defaultResults: number;
-}> = ({ query }) => {
+}> = ({ query, defaultResults }) => {
   const [indexes, setIndexes] = React.useState<StoredIndex[]>([]);
   const [activeIndex, setActiveIndex] = React.useState<string | undefined>(
     undefined
   );
-  const [searchResponse, setSearchResponse] =
-    React.useState<SearchResponse | null>(null);
+  const [searchResponse, setSearchResponse] = React.useState<SearchResponse>();
   const [expanded, setExpanded] = React.useState<boolean>(false);
   const [status, setStatus] = React.useState<Status>(Status.LOADING);
 
@@ -85,10 +79,16 @@ export const Google: React.FC<{
         // Scope search to a specific index
         setIndexes(indexData.indexes);
         setActiveIndex(indexData.activeIndex);
-        await search(query, indexData.activeIndex);
+        const res = await search(query, indexData.activeIndex);
+        if (res) {
+          setSearchResponse(res);
+        }
       } else {
         // Search all indexes
-        await search(query);
+        const res = await search(query);
+        if (res) {
+          setSearchResponse(res);
+        }
       }
     }
     onLoad();
@@ -104,5 +104,82 @@ export const Google: React.FC<{
     }
   }, [searchResponse]);
 
-  return <div></div>;
+  return (
+    // Remove any other css classes that may be present
+    <div className="w-full">
+      {status === Status.NOKEY ? (
+        <div className="w-full h-full flex justify-center items-center">
+          <h1>No API key found</h1>
+          <p>Please add an API key in the settings page.</p>
+        </div>
+      ) : status === Status.LOADING ? (
+        <div className="w-full space-y-4 pb-8">
+          {/* Make number of loading cards based on default number of results */}
+          {[...Array(defaultResults)].map((_, i) => (
+            <LoadingCard key={i} />
+          ))}
+          <div className="w-full divider pt-4">
+            <button
+              className="btn btn-primary"
+              onClick={() => setExpanded(!expanded)}
+            >
+              {expanded ? 'Show less' : 'Show more'}
+            </button>
+          </div>
+        </div>
+      ) : status === Status.RESULTS && searchResponse ? (
+        <div className="w-full space-y-4 pb-8">
+          {searchResponse.answer !== undefined ? (
+            <AnswerCard answer={searchResponse.answer} />
+          ) : null}
+          {/* Only show the default amount of results and if there is answer subtract 1*/}
+          {searchResponse.results
+            ?.slice(
+              0,
+              expanded
+                ? searchResponse.answer !== undefined
+                  ? searchResponse.results?.length - 1
+                  : searchResponse.results?.length
+                : defaultResults
+            )
+            .map((result, i) => {
+              // Get index and preview
+              const index = searchResponse.indexes[result.indexId];
+              const obj = searchResponse.objects[result.objectId];
+              if (!obj || !index) {
+                return null;
+              }
+
+              const card = CardMap.get(obj.type);
+              if (card) {
+                // Give the card a key and if we are only search one index.
+                return React.createElement(
+                  card,
+                  {
+                    key: i,
+                    index: index,
+                    result: result,
+                    object: obj,
+                  },
+                  null
+                );
+              }
+            })}
+          <div className="w-full divider pt-4">
+            <button
+              className="btn btn-primary"
+              onClick={() => setExpanded(!expanded)}
+            >
+              {expanded ? 'Show less' : 'Show more'}
+            </button>
+          </div>
+        </div>
+      ) : status === Status.ERROR ? (
+        <div className="w-full">
+          <h1>No results found</h1>
+          <p>Try a different search.</p>
+        </div>
+      ) : null}
+    </div>
+  );
 };

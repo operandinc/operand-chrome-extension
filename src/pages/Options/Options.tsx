@@ -24,6 +24,7 @@ const Options: React.FC = () => {
     automaticIndexingEnabled: false,
     automaticIndexingDestination: '',
     manualIndexingMostRecentDestination: '',
+    defaultResults: 1,
   });
   const [rules, setRules] = React.useState<Rule[]>([]);
   const [domain, setDomain] = React.useState<string>('');
@@ -62,6 +63,7 @@ const Options: React.FC = () => {
     onChange();
   }, [data]);
 
+  console.log('data', data);
   return (
     <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10">
       <div className="mx-auto max-w-3xl prose prose-sm">
@@ -146,6 +148,32 @@ const Options: React.FC = () => {
                     className="toggle toggle-success"
                     checked={data.searchInjectionEnabled}
                   />
+                  <h3>Default Results Shown</h3>
+                  <p>
+                    Choose how many results you would like to see by default.
+                  </p>
+                  <div className="flex justify-start items-center gap-4">
+                    {/* Create options 1-5 */}
+                    {[1, 2, 3, 4, 5].map((i) => (
+                      <div key={i} className="flex flex-col items-center">
+                        <input
+                          type="radio"
+                          name="defaultResults"
+                          className="radio"
+                          checked={data.defaultResults === i}
+                          onChange={async (e) => {
+                            await setSetting('defaultResults', i);
+                            const settings = await getSettings();
+                            if (settings) {
+                              setData(settings);
+                            }
+                          }}
+                        />
+                        <p>{i}</p>
+                      </div>
+                    ))}
+                  </div>
+
                   <h3>Automatic Indexing</h3>
                   <p>
                     Automatically send your public browsing data to an Operand

@@ -9,7 +9,6 @@ import {
   operandClient,
   ObjectService,
   ObjectType,
-  IndexService,
   Index,
 } from '@operandinc/sdk';
 
@@ -26,6 +25,7 @@ chrome.runtime.onInstalled.addListener(async () => {
       automaticIndexingDestination: '',
       automaticIndexingEnabled: false,
       manualIndexingMostRecentDestination: '',
+      defaultResults: 1,
     });
   }
   // If the token is not set, open the options page
@@ -129,76 +129,71 @@ chrome.tabs.onUpdated.addListener(async function (tabId, changeInfo, tab) {
 });
 
 // Listen for messages from content script
-chrome.runtime.onMessage.addListener(async function (
-  request,
-  sender,
-  sendResponse
-) {
+chrome.runtime.onMessage.addListener(async function (request) {
   if (request.type === 'openOptions') {
     chrome.runtime.openOptionsPage();
   }
 });
 
-async function checkTeams() {
-  // We want to check if the user has any teams
-  const settings = await getSettings();
-  if (!settings) {
-    return;
-  }
-  if (!settings.apiKey) {
-    return;
-  }
-  const client = operandClient(IndexService, settings.apiKey, endpoint);
-  const response = await client.listIndexes({});
+// async function checkTeams() {
+//   // We want to check if the user has any teams
+//   const settings = await getSettings();
+//   if (!settings) {
+//     return;
+//   }
+//   if (!settings.apiKey) {
+//     return;
+//   }
+//   const client = operandClient(IndexService, settings.apiKey, endpoint);
+//   const response = await client.listIndexes({});
 
-  const teamIndexes = response.indexes.filter(isLikelyTeamIndex);
+//   const teamIndexes = response.indexes.filter(isLikelyTeamIndex);
 
-  if (teamIndexes.length > 0) {
-    // We have team indexes
-    // We want to store these in the teams data structure
-    const data = await getTeamData();
-    if (data) {
-      // Check all the existing teams in the data structure to see if they are still valid
-      data.teams = data.teams.filter((team) => {
-        return teamIndexes.some(
-          (index) => index.publicId === team.indexPublicId
-        );
-      });
-      // Add any new teams
-      teamIndexes.forEach((index) => {
-        if (!data.teams.some((team) => team.indexPublicId === index.publicId)) {
-          data.teams.push({
-            name: index.name,
-            indexPublicId: index.publicId,
-          });
-        }
-      });
-      await setTeamData(data);
-    } else {
-      // We have no team data
-      await setTeamData({
-        teams: teamIndexes.map((index) => {
-          return {
-            name: index.name,
-            indexPublicId: index.publicId,
-          };
-        }),
-      });
-    }
-  } else {
-    // We have no team indexes
-    // We want to clear the team data
-    await setTeamData({
-      activeTeamId: undefined,
-      teams: [],
-    });
-  }
-}
+//   if (teamIndexes.length > 0) {
+//     // We have team indexes
+//     // We want to store these in the teams data structure
+//     const data = await getTeamData();
+//     if (data) {
+//       // Check all the existing teams in the data structure to see if they are still valid
+//       data.teams = data.teams.filter((team) => {
+//         return teamIndexes.some(
+//           (index) => index.publicId === team.indexPublicId
+//         );
+//       });
+//       // Add any new teams
+//       teamIndexes.forEach((index) => {
+//         if (!data.teams.some((team) => team.indexPublicId === index.publicId)) {
+//           data.teams.push({
+//             name: index.name,
+//             indexPublicId: index.publicId,
+//           });
+//         }
+//       });
+//       await setTeamData(data);
+//     } else {
+//       // We have no team data
+//       await setTeamData({
+//         teams: teamIndexes.map((index) => {
+//           return {
+//             name: index.name,
+//             indexPublicId: index.publicId,
+//           };
+//         }),
+//       });
+//     }
+//   } else {
+//     // We have no team indexes
+//     // We want to clear the team data
+//     await setTeamData({
+//       activeTeamId: undefined,
+//       teams: [],
+//     });
+//   }
+// }
 
 // On load
 chrome.runtime.onStartup.addListener(async () => {
   console.log('Startup!');
-  await checkTeams();
 });
 
 // Checks if an index is likely to be the team's index.

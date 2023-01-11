@@ -6,6 +6,7 @@ export type Settings = {
   automaticIndexingDestination: string;
   searchInjectionEnabled: boolean;
   manualIndexingMostRecentDestination: string;
+  defaultResults: number;
 };
 
 async function validateSettings(settings: Settings) {
@@ -19,6 +20,8 @@ async function validateSettings(settings: Settings) {
     'manualIndexingMostRecentDestination',
   ];
 
+  const numberSettings: (keyof Settings)[] = ['defaultResults'];
+
   for (const key of booleanSettings) {
     // If the setting is defined and is not a boolean
     if (settings[key] !== undefined && typeof settings[key] !== 'boolean') {
@@ -29,6 +32,13 @@ async function validateSettings(settings: Settings) {
   for (const key of stringSettings) {
     // If the setting is defined and is not a string
     if (settings[key] !== undefined && typeof settings[key] !== 'string') {
+      return false;
+    }
+  }
+
+  for (const key of numberSettings) {
+    // If the setting is defined and is not a number
+    if (settings[key] !== undefined && typeof settings[key] !== 'number') {
       return false;
     }
   }
@@ -92,6 +102,18 @@ export async function getSearchInjectionEnabled() {
   return enabled;
 }
 
+export async function getDefaultResults() {
+  const defaultResults = await getSetting('defaultResults');
+  if (defaultResults === null) {
+    return 1;
+  }
+  // Assert that the key is a string
+  if (typeof defaultResults !== 'number') {
+    return 1;
+  }
+  return defaultResults;
+}
+
 // Set the entire settings object
 export async function setSettings(settings: Settings) {
   if (await validateSettings(settings)) {
@@ -138,6 +160,12 @@ export async function setSetting(key: keyof Settings, value: any) {
         return false;
       }
       settings.manualIndexingMostRecentDestination = value;
+      break;
+    case 'defaultResults':
+      if (typeof value !== 'number') {
+        return false;
+      }
+      settings.defaultResults = value;
       break;
     default:
       return false;
