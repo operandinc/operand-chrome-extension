@@ -1,15 +1,6 @@
-import {
-  Answer,
-  ContentSnippet,
-  HTMLMetadata,
-  Index,
-  ObjectPreview,
-  ObjectType,
-  operandClient,
-  OperandService,
-  Properties,
-  SearchResponse,
-} from '@operandinc/sdk';
+import { Combobox } from '@headlessui/react';
+import { ChevronUpDownIcon } from '@heroicons/react/24/solid';
+import { operandClient, OperandService, SearchResponse } from '@operandinc/sdk';
 import * as React from 'react';
 import { getApiKey, getIndexData, StoredIndex } from '../../../storage';
 import { CardMap } from '../cardmap';
@@ -45,13 +36,6 @@ async function search(query: string, indexId?: string) {
   return searchResponse;
 }
 
-// Not used right now but will be used to display a card for an answer
-const AnswerCard: React.FC<{
-  answer: Answer;
-}> = ({ answer }) => {
-  return <div></div>;
-};
-
 // Google search injection will be fixed size so as to not create a jarring experience.
 // Users can expand the search to see more results and also choose in their settings how many results they want to see by default.
 // Users can also narrow their search to a specific index.
@@ -60,9 +44,10 @@ export const Google: React.FC<{
   defaultResults: number;
 }> = ({ query, defaultResults }) => {
   const [indexes, setIndexes] = React.useState<StoredIndex[]>([]);
-  const [activeIndex, setActiveIndex] = React.useState<string | undefined>(
-    undefined
+  const [activeIndex, setActiveIndex] = React.useState<StoredIndex | null>(
+    null
   );
+  const [indexQuery, setIndexQuery] = React.useState<string>('');
   const [searchResponse, setSearchResponse] = React.useState<SearchResponse>();
   const [expanded, setExpanded] = React.useState<boolean>(false);
   const [status, setStatus] = React.useState<Status>(Status.LOADING);
@@ -75,10 +60,14 @@ export const Google: React.FC<{
         return null;
       }
       const indexData = await getIndexData();
+
       if (indexData) {
         // Scope search to a specific index
         setIndexes(indexData.indexes);
-        setActiveIndex(indexData.activeIndex);
+        const activeIndex = indexData.indexes.find(
+          (idx) => idx.indexId === indexData.activeIndex
+        );
+        setActiveIndex(activeIndex ? activeIndex : null);
         const res = await search(query, indexData.activeIndex);
         if (res) {
           setSearchResponse(res);
@@ -103,6 +92,13 @@ export const Google: React.FC<{
       }
     }
   }, [searchResponse]);
+
+  const filteredIndexes =
+    indexQuery === ''
+      ? indexes
+      : indexes.filter((idx) => {
+          return idx.name.toLowerCase().includes(indexQuery.toLowerCase());
+        });
 
   return (
     // Remove any other css classes that may be present
@@ -129,9 +125,52 @@ export const Google: React.FC<{
         </div>
       ) : status === Status.RESULTS && searchResponse ? (
         <div className="w-full space-y-4 pb-8">
-          {searchResponse.answer !== undefined ? (
-            <AnswerCard answer={searchResponse.answer} />
-          ) : null}
+          <Combobox value={activeIndex} onChange={setActiveIndex}>
+            <div className="flex justify-end w-full">
+              <div className="flex items-center justify-end w-xs shadow-lg cursor-default border-primary-focus">
+                <Combobox.Input
+                  className="input input-sm flex-grow focus:outline-none"
+                  onChange={(event) => setIndexQuery(event.target.value)}
+                  displayValue={(idx: StoredIndex | null) => {
+                    if (idx) {
+                      return idx.name;
+                    } else {
+                      if (indexQuery === '') {
+                        return 'All indexes';
+                      } else {
+                        return indexQuery;
+                      }
+                    }
+                  }}
+                />
+                <Combobox.Button
+                  onClick={() => {
+                    setIndexQuery('');
+                  }}
+                  className="btn btn-square btn-sm"
+                >
+                  <ChevronUpDownIcon className="h-6 w-6" />
+                </Combobox.Button>
+              </div>
+            </div>
+            <Combobox.Options className="menu shadow-lg menu-compact">
+              {filteredIndexes.map((idx) => (
+                <Combobox.Option key={idx.indexId} value={idx}>
+                  {({ active, selected }) => (
+                    <div
+                      className={`${active ? 'active' : ''} ${
+                        selected ? 'bg-info text-info-content' : ''
+                      }`}
+                    >
+                      {idx.name}
+                    </div>
+                  )}
+                </Combobox.Option>
+              ))}
+            </Combobox.Options>
+          </Combobox>
+
+          {searchResponse.answer !== undefined ? <></> : null}
           {/* Only show the default amount of results and if there is answer subtract 1*/}
           {searchResponse.results
             ?.slice(

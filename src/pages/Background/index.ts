@@ -4,18 +4,29 @@
 // - uninstalls
 // - omnibox events and queries
 
-import { getApiKey, getRules, getSettings, setSettings } from '../../storage';
+import {
+  deleteIndexData,
+  getApiKey,
+  getIndexData,
+  getRules,
+  getSettings,
+  setIndexData,
+  setSettings,
+  StoredIndex,
+} from '../../storage';
 import {
   operandClient,
   ObjectService,
   ObjectType,
   Index,
+  IndexService,
 } from '@operandinc/sdk';
 
 export const endpoint = 'https://api.operand.ai';
 // On Install
 chrome.runtime.onInstalled.addListener(async () => {
   console.log('Installed!');
+  chrome.alarms.create('fetchIndexes', { periodInMinutes: 60 * 3 });
   const settings = await getSettings();
   if (!settings) {
     // Set defaults
@@ -34,11 +45,19 @@ chrome.runtime.onInstalled.addListener(async () => {
     chrome.runtime.openOptionsPage();
   }
 });
+
 // Ombnibox
 chrome.omnibox.onInputEntered.addListener(function (text) {
   if (!text) return;
   var newURL = 'https://operand.ai/feed?q=' + text;
   chrome.tabs.create({ url: newURL });
+});
+
+// On Alarm
+chrome.alarms.onAlarm.addListener(async (alarm) => {
+  if (alarm.name === 'fetchIndexes') {
+    await fetchIndexes();
+  }
 });
 
 const ignorePrefixes = [
@@ -130,70 +149,64 @@ chrome.tabs.onUpdated.addListener(async function (tabId, changeInfo, tab) {
 
 // Listen for messages from content script
 chrome.runtime.onMessage.addListener(async function (request) {
+  // If the message is to open the options page
   if (request.type === 'openOptions') {
     chrome.runtime.openOptionsPage();
   }
+  // If the message is to get the indexes
+  else if (request.type === 'setApiKey') {
+    await fetchIndexes();
+  }
 });
 
-// async function checkTeams() {
-//   // We want to check if the user has any teams
-//   const settings = await getSettings();
-//   if (!settings) {
-//     return;
-//   }
-//   if (!settings.apiKey) {
-//     return;
-//   }
-//   const client = operandClient(IndexService, settings.apiKey, endpoint);
-//   const response = await client.listIndexes({});
+async function fetchIndexes() {
+  console.log('fetching indexes');
+  // We want to check if the user has any indexes
+  const settings = await getSettings();
+  if (!settings) {
+    return;
+  }
+  if (!settings.apiKey || settings.apiKey === '') {
+    console.log('no api key');
+    return;
+  }
+  const client = operandClient(IndexService, settings.apiKey, endpoint);
+  const subscribedIndexes = await client.subscriptions({});
+  const teamIndexes = subscribedIndexes.indexes.filter(isLikelyTeamIndex);
 
-//   const teamIndexes = response.indexes.filter(isLikelyTeamIndex);
+  const subs = subscribedIndexes.indexes.filter(
+    (index) => !isLikelyTeamIndex(index)
+  );
 
-//   if (teamIndexes.length > 0) {
-//     // We have team indexes
-//     // We want to store these in the teams data structure
-//     const data = await getTeamData();
-//     if (data) {
-//       // Check all the existing teams in the data structure to see if they are still valid
-//       data.teams = data.teams.filter((team) => {
-//         return teamIndexes.some(
-//           (index) => index.publicId === team.indexPublicId
-//         );
-//       });
-//       // Add any new teams
-//       teamIndexes.forEach((index) => {
-//         if (!data.teams.some((team) => team.indexPublicId === index.publicId)) {
-//           data.teams.push({
-//             name: index.name,
-//             indexPublicId: index.publicId,
-//           });
-//         }
-//       });
-//       await setTeamData(data);
-//     } else {
-//       // We have no team data
-//       await setTeamData({
-//         teams: teamIndexes.map((index) => {
-//           return {
-//             name: index.name,
-//             indexPublicId: index.publicId,
-//           };
-//         }),
-//       });
-//     }
-//   } else {
-//     // We have no team indexes
-//     // We want to clear the team data
-//     await setTeamData({
-//       activeTeamId: undefined,
-//       teams: [],
-//     });
-//   }
-// }
+  const storedIndexes: StoredIndex[] = [];
+  const indexData = await getIndexData();
+  for (const index of teamIndexes) {
+    storedIndexes.push({
+      indexId: index.publicId,
+      name: index.name,
+      type: 'TEAM',
+    });
+  }
+  for (const index of subs) {
+    storedIndexes.push({
+      indexId: index.publicId,
+      name: index.name,
+      type: 'SUBSCRIPTION',
+    });
+  }
+
+  // Wipe existing indexes
+  await deleteIndexData();
+  // Save the indexes
+  await setIndexData({
+    activeIndex: indexData?.activeIndex,
+    indexes: storedIndexes,
+  });
+}
 
 // On load
 chrome.runtime.onStartup.addListener(async () => {
-  console.log('Startup!');
+  await fetchIndexes();
 });
 
 // Checks if an index is likely to be the team's index.

@@ -5,7 +5,7 @@ import {
 } from '@heroicons/react/24/solid';
 import { ContentSnippet, Index, Object$ } from '@operandinc/sdk';
 import * as React from 'react';
-import { Discord, IconProps, Notion, Slack } from './icons';
+import { Discord, IconProps, Linear, Notion, Slack } from './icons';
 import '../content.styles.css';
 
 /* Current types of cards
@@ -17,11 +17,6 @@ import '../content.styles.css';
     - PDFResultCard: Card for PDF content
     - EPUBResultCard: Card for EPUB content
     - YouTubeResultCard: Card for YouTube content
-    - SlackResultCard: Card for Slack content
-    - GitHubResultCard: Card for GitHub content
-    - NotionResultCard: Card for Notion content
-    - DiscordResultCard: Card for Discord content
-    - LinearResultCard: Card for Linear content
 */
 
 export type CardProps = {
@@ -48,7 +43,7 @@ export const LoadingCard: React.FC = () => {
   );
 };
 
-const ContentSnippetContainer: React.FC<{
+const TextContentSnippetContainer: React.FC<{
   content: string;
 }> = ({ content }) => {
   return <div className="line-clamp-3 text-lg h-22">{content}</div>;
@@ -76,7 +71,7 @@ const InfoContainer: React.FC<{
               } else {
                 // Use the Operand URL
                 window.open(
-                  `https://operand.ai/indexes${index.publicId}/${object.id}`,
+                  `https://operand.ai/indexes/${index.publicId}/${object.id}`,
                   '_blank'
                 );
               }
@@ -116,7 +111,7 @@ export const TextResultCard: React.FC<CardProps> = ({
   if (object.preview?.url?.includes('discord.com')) {
     return (
       <CardBase>
-        <ContentSnippetContainer content={result.content} />
+        <TextContentSnippetContainer content={result.content} />
         <InfoContainer
           index={index}
           object={object}
@@ -129,7 +124,7 @@ export const TextResultCard: React.FC<CardProps> = ({
   } else if (object.preview?.url?.includes('slack.com')) {
     return (
       <CardBase>
-        <ContentSnippetContainer content={result.content} />
+        <TextContentSnippetContainer content={result.content} />
         <InfoContainer
           index={index}
           object={object}
@@ -139,10 +134,23 @@ export const TextResultCard: React.FC<CardProps> = ({
         />
       </CardBase>
     );
+  } else if (object.preview?.url?.includes('linear.app')) {
+    return (
+      <CardBase>
+        <TextContentSnippetContainer content={result.content} />
+        <InfoContainer
+          index={index}
+          object={object}
+          Icon={Linear}
+          altTitle="View On Linear"
+          useOriginalUrl={true}
+        />
+      </CardBase>
+    );
   } else {
     return (
       <CardBase>
-        <ContentSnippetContainer content={result.content} />
+        <TextContentSnippetContainer content={result.content} />
         <InfoContainer
           index={index}
           object={object}
@@ -164,7 +172,7 @@ export const HtmlResultCard: React.FC<CardProps> = ({
   if (object.preview?.url?.includes('notion.so')) {
     return (
       <CardBase>
-        <ContentSnippetContainer content={result.content} />
+        <TextContentSnippetContainer content={result.content} />
         <InfoContainer
           index={index}
           object={object}
@@ -177,7 +185,7 @@ export const HtmlResultCard: React.FC<CardProps> = ({
   } else {
     return (
       <CardBase>
-        <ContentSnippetContainer content={result.content} />
+        <TextContentSnippetContainer content={result.content} />
         <InfoContainer
           index={index}
           object={object}
@@ -188,4 +196,23 @@ export const HtmlResultCard: React.FC<CardProps> = ({
       </CardBase>
     );
   }
+};
+
+// Displays code snippets
+export const CodeResultCard: React.FC<CardProps> = ({
+  result,
+  index,
+  object,
+}) => {
+  return (
+    <CardBase>
+      {/* TODO: Split on newlines and render nicely */}
+      {/* Render the code */}
+      <div className="prose">
+        <pre>
+          <code className="break-words">{result.content}</code>
+        </pre>
+      </div>
+    </CardBase>
+  );
 };

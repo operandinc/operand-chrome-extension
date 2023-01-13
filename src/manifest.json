@@ -23,7 +23,7 @@
     }
   ],
 
-  "permissions": ["tabs", "storage"],
+  "permissions": ["tabs", "storage", "alarms"],
   "background": {
     "service_worker": "background.bundle.js"
   }

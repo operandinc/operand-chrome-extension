@@ -227,7 +227,7 @@ export async function removeRule(rule: Rule) {
 export type StoredIndex = {
   indexId: string;
   name: string;
-  team: boolean;
+  type: 'TEAM' | 'PERSONAL' | 'SUBSCRIPTION';
 };
 
 export type IndexData = {
@@ -252,6 +252,10 @@ export async function getIndexData() {
 
 export async function setIndexData(indexData: IndexData) {
   await chrome.storage.sync.set({ indexData });
+}
+
+export async function deleteIndexData() {
+  await chrome.storage.sync.remove('indexData');
 }
 
 export async function setActiveIndex(indexId?: string) {

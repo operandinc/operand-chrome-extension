@@ -119,6 +119,9 @@ const Options: React.FC = () => {
                 value={data.apiKey}
                 onChange={async (e) => {
                   setData({ ...data, apiKey: e.target.value });
+                  chrome.runtime.sendMessage({
+                    type: 'setApiKey',
+                  });
                 }}
                 autoFocus={true}
                 placeholder="paste your api key here"
