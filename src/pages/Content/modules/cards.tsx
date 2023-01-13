@@ -1,4 +1,5 @@
 import {
+  ArrowsPointingOutIcon,
   DocumentIcon,
   LinkIcon,
   RectangleStackIcon,
@@ -7,6 +8,7 @@ import { ContentSnippet, Index, Object$ } from '@operandinc/sdk';
 import * as React from 'react';
 import { Discord, Github, IconProps, Linear, Notion, Slack } from './icons';
 import '../content.styles.css';
+import { v4 as uuidv4 } from 'uuid';
 
 /* Current types of cards
     - TextResultCard: Card for Text content
@@ -84,7 +86,15 @@ const InfoContainer: React.FC<{
             {object.preview?.title ? object.preview?.title : altTitle}
           </div>
         </div>
-        <div className="btn btn-sm btn-outline normal-case gap-4 truncate">
+        <div
+          onClick={() => {
+            window.open(
+              `https://operand.ai/indexes/${index.publicId}`,
+              '_blank'
+            );
+          }}
+          className="btn btn-sm btn-outline normal-case gap-4 truncate"
+        >
           <RectangleStackIcon className="w-4 h-4" />
           {index.name}
         </div>
@@ -217,14 +227,44 @@ export const CodeResultCard: React.FC<CardProps> = ({
   index,
   object,
 }) => {
+  const id = uuidv4();
   return (
     <CardBase>
       {/* TODO: Split on newlines and render nicely */}
       {/* Render the code */}
-      <div className="prose">
+      <div className="relative h-22 overflow-scroll prose prose-sm max-w-full">
         <pre>
-          <code className="break-words">{result.content}</code>
+          <code>{result.content}</code>
         </pre>
+        <label htmlFor={id} className="absolute top-0 right-0 btn btn-xs">
+          <ArrowsPointingOutIcon className="w-4 h-4" />
+        </label>
+      </div>
+
+      <InfoContainer
+        index={index}
+        object={object}
+        Icon={Github}
+        altTitle="View On Github"
+        useOriginalUrl={true}
+      />
+      <input type="checkbox" id={id} className="modal-toggle" />
+      <div className="modal">
+        <div className="modal-box">
+          <h3 className="font-bold text-lg">
+            {object.preview?.title ? object.preview?.title : 'Code Snippet'}
+          </h3>
+          <div className="prose prose-sm max-w-full">
+            <pre>
+              <code>{result.content}</code>
+            </pre>
+          </div>
+          <div className="modal-action">
+            <label htmlFor={id} className="btn">
+              Close
+            </label>
+          </div>
+        </div>
       </div>
     </CardBase>
   );

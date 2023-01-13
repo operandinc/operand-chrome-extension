@@ -22,6 +22,7 @@ enum Status {
 }
 
 async function search(query: string, indexId?: string) {
+  console.log('searching', query, indexId);
   var key = await getApiKey();
   if (!key) {
     return null;
@@ -80,15 +81,20 @@ export const Google: React.FC<{
         );
         setActiveIndex(activeIndex ? activeIndex : FakeEmptyIndex);
 
-        const res = await search(query, indexData.activeIndex);
+        const res = await search(
+          query,
+          indexData.activeIndex ? indexData.activeIndex : undefined
+        );
         if (res) {
           setSearchResponse(res);
+          return;
         }
       } else {
         // Search all indexes
         const res = await search(query);
         if (res) {
           setSearchResponse(res);
+          return;
         }
       }
     }
@@ -127,12 +133,13 @@ export const Google: React.FC<{
             setStatus(Status.LOADING);
             setActiveIndex(idx);
             if (idx && idx.indexId !== '') {
+              console.log(idx.indexId);
               const res = await search(query, idx.indexId);
               if (res) {
                 setSearchResponse(res);
               }
             } else {
-              const res = await search(query);
+              const res = await search(query, undefined);
               if (res) {
                 setSearchResponse(res);
               }
@@ -149,12 +156,6 @@ export const Google: React.FC<{
                   return idx ? idx.name : '';
                 }}
                 value={indexQuery}
-                onBlur={() => {
-                  setIndexQuery('');
-                  if (!activeIndex) {
-                    setActiveIndex(FakeEmptyIndex);
-                  }
-                }}
               />
               <Combobox.Button
                 onClick={() => {
@@ -207,14 +208,16 @@ export const Google: React.FC<{
           {[...Array(defaultResults)].map((_, i) => (
             <LoadingCard key={i} />
           ))}
-          <div className="w-full divider p-4">
-            <div
-              className="btn btn-primary btn-sm"
-              onClick={() => setExpanded(!expanded)}
-            >
-              {expanded ? 'Show less' : 'Show more'}
+          {defaultResults < 5 && (
+            <div className="w-full divider p-4">
+              <div
+                className="btn btn-primary btn-sm"
+                onClick={() => setExpanded(!expanded)}
+              >
+                {expanded ? 'Show less' : 'Show more'}
+              </div>
             </div>
-          </div>
+          )}
         </div>
       ) : status === Status.RESULTS && searchResponse ? (
         <div className="w-full space-y-4 pb-8">
@@ -239,7 +242,7 @@ export const Google: React.FC<{
 
               const card = CardMap.get(obj.type);
               if (card) {
-                // Give the card a key and if we are only search one index.
+                // Give the card a key and if we are only searching one index.
                 return React.createElement(
                   card,
                   {
@@ -252,14 +255,16 @@ export const Google: React.FC<{
                 );
               }
             })}
-          <div className="w-full divider p-4">
-            <div
-              className="btn btn-primary btn-sm"
-              onClick={() => setExpanded(!expanded)}
-            >
-              {expanded ? 'Show less' : 'Show more'}
+          {searchResponse?.results.length > defaultResults && (
+            <div className="w-full divider p-4">
+              <div
+                className="btn btn-primary btn-sm"
+                onClick={() => setExpanded(!expanded)}
+              >
+                {expanded ? 'Show less' : 'Show more'}
+              </div>
             </div>
-          </div>
+          )}
         </div>
       ) : status === Status.ERROR ? (
         <div className="w-full">

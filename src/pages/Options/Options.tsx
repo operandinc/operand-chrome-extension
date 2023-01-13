@@ -177,7 +177,7 @@ const Options: React.FC = () => {
                     ))}
                   </div>
 
-                  <h3>Automatic Indexing</h3>
+                  <h3>Automatic Indexing [Experimental]</h3>
                   <p>
                     Automatically send your public browsing data to an Operand
                     index. We only send the URL of the pages you visit so only
