@@ -1,55 +1,68 @@
-import {
-  ContentSnippet,
-  operandClient,
-  OperandService,
-  SearchResponse,
-} from '@operandinc/sdk';
+import { Combobox } from '@headlessui/react';
+import { ChevronUpDownIcon } from '@heroicons/react/24/solid';
+import { operandClient, OperandService, SearchResponse } from '@operandinc/sdk';
 import * as React from 'react';
-import { getApiKey, getTeamData, setActiveTeamId } from '../../../storage';
-
+import {
+  getApiKey,
+  getIndexData,
+  saveActiveIndex,
+  StoredIndex,
+} from '../../../storage';
+import { CardMap } from '../cardmap';
 import '../content.styles.css';
+import { LoadingCard } from './cards';
 
+const endpoint = 'https://api.operand.ai';
+
+enum Status {
+  NOKEY,
+  LOADING,
+  RESULTS,
+  ERROR,
+}
+
+async function search(query: string, indexId?: string) {
+  console.log('searching', query, indexId);
+  var key = await getApiKey();
+  if (!key) {
+    return null;
+  }
+  // Fire the search
+  const client = operandClient(OperandService, key, endpoint);
+  const searchResponse = await client.search({
+    query: query,
+    limit: 5,
+    indexIds: indexId ? [indexId] : undefined,
+    attemptAnswer: false,
+    objectOptions: {
+      includePreview: true,
+    },
+  });
+  console.log(searchResponse);
+  return searchResponse;
+}
+
+const FakeEmptyIndex: StoredIndex = {
+  indexId: '',
+  name: 'All indexes',
+  type: 'PERSONAL',
+};
+
+// Google search injection will be fixed size so as to not create a jarring experience.
+// Users can expand the search to see more results and also choose in their settings how many results they want to see by default.
+// Users can also narrow their search to a specific index.
 export const Google: React.FC<{
   query: string;
-}> = ({ query }) => {
-  const [searchResponse, setSearchResponse] =
-    React.useState<SearchResponse | null>(null);
-  const [teams, setTeams] = React.useState<
-    {
-      name: string;
-      indexPublicId: string;
-    }[]
-  >([]);
-  const [activeTeam, setActiveTeam] = React.useState<string | undefined>(
-    undefined
+  defaultResults: number;
+}> = ({ query, defaultResults }) => {
+  const [indexes, setIndexes] = React.useState<StoredIndex[]>([FakeEmptyIndex]);
+  const [activeIndex, setActiveIndex] = React.useState<StoredIndex | null>(
+    FakeEmptyIndex
   );
-  enum Status {
-    NOKEY,
-    LOADING,
-    ANSWER,
-    RESULTS,
-    ERROR,
-  }
+  const [indexQuery, setIndexQuery] = React.useState<string>('');
+  const [searchResponse, setSearchResponse] = React.useState<SearchResponse>();
+  const [expanded, setExpanded] = React.useState<boolean>(false);
   const [status, setStatus] = React.useState<Status>(Status.LOADING);
-  const search = async (query: string, indexId?: string) => {
-    var key = await getApiKey();
-    if (!key) {
-      setStatus(Status.NOKEY);
-      return null;
-    }
-    // Fire the search
-    const client = operandClient(OperandService, key, 'https://api.operand.ai');
-    const searchResponse = await client.search({
-      query: query,
-      limit: 2,
-      indexIds: indexId ? [indexId] : undefined,
-      attemptAnswer: false,
-      objectOptions: {
-        includePreview: true,
-      },
-    });
-    setSearchResponse(searchResponse);
-  };
 
   React.useEffect(() => {
     async function onLoad() {
@@ -58,29 +71,39 @@ export const Google: React.FC<{
         setStatus(Status.NOKEY);
         return null;
       }
-      const teamData = await getTeamData();
-      if (teamData) {
-        setTeams(teamData.teams);
-        setActiveTeam(teamData.activeTeamId);
-        await search(query, teamData.activeTeamId);
+      const indexData = await getIndexData();
+
+      if (indexData) {
+        // Scope search to a specific index
+        setIndexes([FakeEmptyIndex, ...indexData.indexes]);
+        const activeIndex = indexData.indexes.find(
+          (idx) => idx.indexId === indexData.activeIndex
+        );
+        setActiveIndex(activeIndex ? activeIndex : FakeEmptyIndex);
+
+        const res = await search(
+          query,
+          indexData.activeIndex ? indexData.activeIndex : undefined
+        );
+        if (res) {
+          setSearchResponse(res);
+          return;
+        }
       } else {
-        await search(query);
+        // Search all indexes
+        const res = await search(query);
+        if (res) {
+          setSearchResponse(res);
+          return;
+        }
       }
     }
     onLoad();
-  }, [query, Status.NOKEY]);
+  }, [query]);
 
   React.useEffect(() => {
     if (searchResponse) {
-      if (
-        searchResponse?.answer?.answer &&
-        searchResponse?.answer?.answer.length > 0
-      ) {
-        setStatus(Status.ANSWER);
-      } else if (
-        searchResponse?.results &&
-        searchResponse?.results.length > 0
-      ) {
+      if (searchResponse?.results && searchResponse?.results.length > 0) {
         setStatus(Status.RESULTS);
       } else {
         setStatus(Status.ERROR);
@@ -88,164 +111,167 @@ export const Google: React.FC<{
     }
   }, [searchResponse]);
 
+  React.useEffect(() => {
+    if (activeIndex) {
+      saveActiveIndex(activeIndex.indexId);
+    }
+  }, [activeIndex]);
+
+  const filteredIndexes =
+    indexQuery === '' || indexQuery === undefined
+      ? indexes
+      : indexes.filter((idx) => {
+          return idx.name.toLowerCase().includes(indexQuery.toLowerCase());
+        });
+
   return (
-    <div>
-      {/* Operand Section */}
-      <div className="w-full h-40 pb-3 overflow:hidden">
-        <div className="flex justify-between items-center h-6 pb-1 text-base text-black dark:text-white ">
-          <p>Operand Results:</p>
-          {teams.length > 0 && (
-            <select
-              className="text-sm text-black dark:text-white bg-transparent border-none"
-              onChange={async (e) => {
-                setStatus(Status.LOADING);
-                setActiveTeam(
-                  e.target.value === 'undefined' ? undefined : e.target.value
-                );
-                search(
-                  query,
-                  e.target.value === 'undefined' ? undefined : e.target.value
-                );
-                setActiveTeamId(
-                  e.target.value === 'undefined' ? undefined : e.target.value
-                );
-              }}
-              value={activeTeam}
-            >
-              <option value={'undefined'}>select team</option>
-              {teams.map((team) => (
-                <option key={team.indexPublicId} value={team.indexPublicId}>
-                  {team.name}
-                </option>
+    <div className="w-full">
+      {(status === Status.LOADING || status === Status.RESULTS) && (
+        <Combobox
+          value={activeIndex}
+          onChange={async (idx: StoredIndex | null) => {
+            setStatus(Status.LOADING);
+            setActiveIndex(idx);
+            if (idx && idx.indexId !== '') {
+              console.log(idx.indexId);
+              const res = await search(query, idx.indexId);
+              if (res) {
+                setSearchResponse(res);
+              }
+            } else {
+              const res = await search(query, undefined);
+              if (res) {
+                setSearchResponse(res);
+              }
+            }
+          }}
+          nullable
+        >
+          <div className="flex justify-end w-full pb-4 px-4">
+            <div className="flex items-center justify-end w-xs shadow-lg cursor-default border-primary-focus px-1 pt-1">
+              <Combobox.Input
+                className="input input-sm flex-grow focus:outline-none"
+                onChange={(event) => setIndexQuery(event.target.value)}
+                displayValue={(idx: StoredIndex | null) => {
+                  return idx ? idx.name : '';
+                }}
+                value={indexQuery}
+              />
+              <Combobox.Button
+                onClick={() => {
+                  setIndexQuery('');
+                  setActiveIndex(null);
+                }}
+                className="btn btn-square btn-sm"
+              >
+                <ChevronUpDownIcon className="h-6 w-6" />
+              </Combobox.Button>
+            </div>
+          </div>
+          <Combobox.Options className="max-h-52 w-full overflow-y-scroll overflow-x-hidden shadow-lg mb-4 p-2">
+            <div className="menu menu-compact">
+              {filteredIndexes.map((idx) => (
+                <Combobox.Option key={idx.indexId} value={idx}>
+                  {({ active, selected }) => (
+                    <div
+                      className={`${active ? 'active' : ''} ${
+                        selected ? 'bg-info text-info-content' : ''
+                      }`}
+                    >
+                      {idx.name}
+                    </div>
+                  )}
+                </Combobox.Option>
               ))}
-            </select>
+            </div>
+          </Combobox.Options>
+        </Combobox>
+      )}
+      {status === Status.NOKEY ? (
+        <div className="w-full h-full flex flex-col justify-center items-center">
+          <p>To get Operand search results you need to set your API Key.</p>
+          <div
+            className="btn btn-primary"
+            onClick={() => {
+              // Send a message to the background script to open the options page
+              chrome.runtime.sendMessage({
+                type: 'openOptions',
+              });
+            }}
+          >
+            Set Key
+          </div>
+        </div>
+      ) : status === Status.LOADING ? (
+        <div className="w-full space-y-4 pb-8">
+          {/* Make number of loading cards based on default number of results */}
+          {[...Array(defaultResults)].map((_, i) => (
+            <LoadingCard key={i} />
+          ))}
+          {defaultResults < 5 && (
+            <div className="w-full divider p-4">
+              <div
+                className="btn btn-primary btn-sm"
+                onClick={() => setExpanded(!expanded)}
+              >
+                {expanded ? 'Show less' : 'Show more'}
+              </div>
+            </div>
           )}
         </div>
+      ) : status === Status.RESULTS && searchResponse ? (
+        <div className="w-full space-y-4 pb-8">
+          {searchResponse.answer !== undefined ? <></> : null}
+          {/* Only show the default amount of results and if there is answer subtract 1*/}
+          {searchResponse.results
+            ?.slice(
+              0,
+              expanded
+                ? searchResponse.answer !== undefined
+                  ? searchResponse.results?.length - 1
+                  : searchResponse.results?.length
+                : defaultResults
+            )
+            .map((result, i) => {
+              // Get index and preview
+              const index = searchResponse.indexes[result.indexId];
+              const obj = searchResponse.objects[result.objectId];
+              if (!obj || !index) {
+                return null;
+              }
 
-        <div className="w-full h-28">
-          {status === Status.NOKEY ? (
-            <div className="flex  flex-col items-center justify-center w-full h-28">
-              <p>To get search results you need to set your API Key</p>
-              <button
-                className="btn btn-primary"
-                onClick={() => {
-                  // Send a message to the background script to open the options page
-                  chrome.runtime.sendMessage({
-                    type: 'openOptions',
-                  });
-                }}
-              >
-                Set Key
-              </button>
-            </div>
-          ) : status === Status.LOADING ? (
-            <div className="flex items-center justify-center w-full h-28">
-              <p>Loading ...</p>
-            </div>
-          ) : status === Status.ANSWER ? (
-            <div className="w-full h-full">
-              {/* Answer */}
-              <div className="text-sm text-gray-700 dark:text-gray-400 truncate h-4">
-                Generated Answer:
-              </div>
-              <div className="w-full h-16 py-2">
-                <div className="line-clamp-3">
-                  {searchResponse?.answer?.answer}
-                </div>
-              </div>
-              <div className="w-full flex justify-start gap-2 h-5 pb-1">
-                <div className="flex-none text-sm">Sources:</div>
-                {/* Deduped results */}
-                {searchResponse?.results &&
-                  searchResponse.results
-                    .reduce((acc: ContentSnippet[], result) => {
-                      if (
-                        result.objectId &&
-                        !acc.find((r) => r.objectId === result.objectId)
-                      ) {
-                        acc.push(result);
-                      }
-                      return acc;
-                    }, [])
-                    .map((result, i) => (
-                      <div className="text-sm truncate" key={i}>
-                        <a
-                          href={
-                            searchResponse?.objects[result.objectId].preview
-                              ?.url ||
-                            `https://operand.ai/indexes/${result.indexId}/${result.objectId}`
-                          }
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="link text-sm truncate h-5"
-                        >
-                          {
-                            searchResponse.objects[result.objectId].preview
-                              ?.title
-                          }
-                        </a>
-                      </div>
-                    ))}
-              </div>
-            </div>
-          ) : status === Status.RESULTS ? (
-            <div className="w-full h-full">
-              <div className="text-sm text-gray-700 dark:text-gray-400 truncate h-4">
-                {
-                  searchResponse?.objects[searchResponse.results[0].objectId]
-                    .preview?.url
-                }
-              </div>
-              <div className="h-6">
-                <a
-                  href={
-                    searchResponse?.objects[searchResponse.results[0].objectId]
-                      .preview?.url ||
-                    `https://operand.ai/indexes${searchResponse?.results[0].indexId}/${searchResponse?.results[0].objectId}`
-                  }
-                  className="flex-grow text-blue-400 hover:underline hover:cursor-pointer text-lg truncate h-6"
-                >
+              const card = CardMap.get(obj.type);
+              if (card) {
+                // Give the card a key and if we are only searching one index.
+                return React.createElement(
+                  card,
                   {
-                    searchResponse?.objects[searchResponse.results[0].objectId]
-                      .preview?.title
-                  }
-                </a>
-              </div>
-              <div className="py-1 h-12 text-sm overflow:hidden">
-                <div className="line-clamp-2">
-                  {searchResponse?.results[0].content}
-                </div>
-              </div>
-              <div className="w-full h-5 pb-1">
-                <div className="text-sm truncate">
-                  <a
-                    href={`https://operand.ai/indexes/${searchResponse?.results[0].indexId}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex-none text-blue-400 hover:underline hover:cursor-pointer truncate h-5"
-                  >
-                    Source Index:{' '}
-                    {searchResponse?.indexes[
-                      searchResponse.results[0].indexId
-                    ] &&
-                      searchResponse.indexes[searchResponse.results[0].indexId]
-                        .name}
-                  </a>
-                </div>
+                    key: i,
+                    index: index,
+                    result: result,
+                    object: obj,
+                  },
+                  null
+                );
+              }
+            })}
+          {searchResponse?.results.length > defaultResults && (
+            <div className="w-full divider p-4">
+              <div
+                className="btn btn-primary btn-sm"
+                onClick={() => setExpanded(!expanded)}
+              >
+                {expanded ? 'Show less' : 'Show more'}
               </div>
             </div>
-          ) : status === Status.ERROR ? (
-            <div className="flex items-center justify-center w-full h-28">
-              <div>No results found.</div>
-            </div>
-          ) : null}
+          )}
         </div>
-        <div className="flex items-center w-full h-4 py-2 space-x-4">
-          <div className="bg-gray-300 h-0.5 rounded flex-grow"></div>
+      ) : status === Status.ERROR ? (
+        <div className="w-full">
+          <h1>No results found</h1>
+          <p>Try a different search.</p>
         </div>
-      </div>
+      ) : null}
     </div>
   );
 };
-
-export default Google;

@@ -1,4 +1,4 @@
-// Function to interact with the storage
+// Functions to interact with the browser storage
 
 export type Settings = {
   apiKey: string;
@@ -6,6 +6,7 @@ export type Settings = {
   automaticIndexingDestination: string;
   searchInjectionEnabled: boolean;
   manualIndexingMostRecentDestination: string;
+  defaultResults: number;
 };
 
 async function validateSettings(settings: Settings) {
@@ -19,6 +20,8 @@ async function validateSettings(settings: Settings) {
     'manualIndexingMostRecentDestination',
   ];
 
+  const numberSettings: (keyof Settings)[] = ['defaultResults'];
+
   for (const key of booleanSettings) {
     // If the setting is defined and is not a boolean
     if (settings[key] !== undefined && typeof settings[key] !== 'boolean') {
@@ -29,6 +32,13 @@ async function validateSettings(settings: Settings) {
   for (const key of stringSettings) {
     // If the setting is defined and is not a string
     if (settings[key] !== undefined && typeof settings[key] !== 'string') {
+      return false;
+    }
+  }
+
+  for (const key of numberSettings) {
+    // If the setting is defined and is not a number
+    if (settings[key] !== undefined && typeof settings[key] !== 'number') {
       return false;
     }
   }
@@ -92,6 +102,18 @@ export async function getSearchInjectionEnabled() {
   return enabled;
 }
 
+export async function getDefaultResults() {
+  const defaultResults = await getSetting('defaultResults');
+  if (defaultResults === null) {
+    return 1;
+  }
+  // Assert that the key is a string
+  if (typeof defaultResults !== 'number') {
+    return 1;
+  }
+  return defaultResults;
+}
+
 // Set the entire settings object
 export async function setSettings(settings: Settings) {
   if (await validateSettings(settings)) {
@@ -138,6 +160,12 @@ export async function setSetting(key: keyof Settings, value: any) {
         return false;
       }
       settings.manualIndexingMostRecentDestination = value;
+      break;
+    case 'defaultResults':
+      if (typeof value !== 'number') {
+        return false;
+      }
+      settings.defaultResults = value;
       break;
     default:
       return false;
@@ -196,39 +224,46 @@ export async function removeRule(rule: Rule) {
   return true;
 }
 
-export type TeamData = {
-  activeTeamId?: string;
-  teams: {
-    name: string;
-    indexPublicId: string;
-  }[];
+export type StoredIndex = {
+  indexId: string;
+  name: string;
+  type: 'TEAM' | 'PERSONAL' | 'SUBSCRIPTION';
 };
 
-export async function getTeamData() {
-  const storage = await chrome.storage.sync.get('teamData');
-  // Assert that the teamData object exists
+export type IndexData = {
+  activeIndex?: string;
+  indexes: StoredIndex[];
+};
+
+export async function getIndexData() {
+  const storage = await chrome.storage.sync.get('indexData');
+  // Assert that the indexData object exists
   if (!storage) {
     return null;
   }
-  const teamData: TeamData = storage.teamData;
-  // Validate the teamData object
-  if (teamData && typeof teamData === 'object') {
-    return teamData;
+  const indexData: IndexData = storage.indexData;
+  // Validate the indexData object
+  if (indexData && typeof indexData === 'object') {
+    return indexData;
   } else {
     return null;
   }
 }
 
-export async function setTeamData(teamData: TeamData) {
-  await chrome.storage.sync.set({ teamData });
+export async function setIndexData(indexData: IndexData) {
+  await chrome.storage.sync.set({ indexData });
 }
 
-export async function setActiveTeamId(id: string | undefined) {
-  const teamData = await getTeamData();
-  if (!teamData) {
+export async function deleteIndexData() {
+  await chrome.storage.sync.remove('indexData');
+}
+
+export async function saveActiveIndex(indexId?: string) {
+  const indexData = await getIndexData();
+  if (!indexData) {
     return false;
   }
-  teamData.activeTeamId = id;
-  await setTeamData(teamData);
+  indexData.activeIndex = indexId;
+  await setIndexData(indexData);
   return true;
 }

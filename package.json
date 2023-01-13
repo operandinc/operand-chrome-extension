@@ -8,7 +8,7 @@
     "build:tailwind": "npx postcss src/tailwind.css -o build/tailwind.dist.css",
     "zip": "rm -f build.zip && zip -r build.zip build",
     "build": "node utils/build.js && npm run build:tailwind && npm run zip",
-    "start": "concurrently \"npm run watch:tailwind\" \"node utils/webserver.js\"",
+    "dev": "concurrently \"npm run watch:tailwind\" \"node utils/webserver.js\"",
     "prettier": "prettier --write '**/*.{js,jsx,ts,tsx,json,css,scss,md}'"
   },
   "dependencies": {
@@ -16,14 +16,16 @@
     "@headlessui/react": "^1.7.4",
     "@heroicons/react": "^2.0.13",
     "@hot-loader/react-dom": "^17.0.2",
-    "@operandinc/sdk": "^4.1.17",
+    "@operandinc/sdk": "^4.1.20",
     "@tailwindcss/line-clamp": "^0.4.2",
     "daisyui": "^2.42.1",
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
     "react-hot-keys": "^2.7.2",
     "react-hot-loader": "^4.13.1",
-    "react-hotkeys-hook": "^4.0.4"
+    "react-hotkeys-hook": "^4.0.4",
+    "react-icons": "^4.7.1",
+    "uuid": "^9.0.0"
   },
   "devDependencies": {
     "@babel/core": "^7.20.2",
@@ -34,6 +36,7 @@
     "@types/chrome": "^0.0.202",
     "@types/react": "^17.0.52",
     "@types/react-dom": "^17.0.11",
+    "@types/uuid": "^9.0.0",
     "autoprefixer": "^10.4.13",
     "babel-eslint": "^10.1.0",
     "babel-loader": "^8.3.0",
