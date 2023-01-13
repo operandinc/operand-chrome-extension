@@ -258,7 +258,7 @@ export async function deleteIndexData() {
   await chrome.storage.sync.remove('indexData');
 }
 
-export async function setActiveIndex(indexId?: string) {
+export async function saveActiveIndex(indexId?: string) {
   const indexData = await getIndexData();
   if (!indexData) {
     return false;

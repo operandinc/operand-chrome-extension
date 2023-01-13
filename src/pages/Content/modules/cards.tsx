@@ -5,7 +5,7 @@ import {
 } from '@heroicons/react/24/solid';
 import { ContentSnippet, Index, Object$ } from '@operandinc/sdk';
 import * as React from 'react';
-import { Discord, IconProps, Linear, Notion, Slack } from './icons';
+import { Discord, Github, IconProps, Linear, Notion, Slack } from './icons';
 import '../content.styles.css';
 
 /* Current types of cards
@@ -29,7 +29,7 @@ const CardBase: React.FC<{
   children: React.ReactNode;
 }> = ({ children }) => {
   return (
-    <div className="w-full h-36 bg-base-100 p-4 shadow-lg flex flex-col gap-1 justify-between">
+    <div className="w-full h-36 bg-base-100 p-2 shadow-lg flex flex-col gap-1 justify-between">
       {children}
     </div>
   );
@@ -143,6 +143,19 @@ export const TextResultCard: React.FC<CardProps> = ({
           object={object}
           Icon={Linear}
           altTitle="View On Linear"
+          useOriginalUrl={true}
+        />
+      </CardBase>
+    );
+  } else if (object.preview?.url?.includes('github.com')) {
+    return (
+      <CardBase>
+        <TextContentSnippetContainer content={result.content} />
+        <InfoContainer
+          index={index}
+          object={object}
+          Icon={Github}
+          altTitle="View On Github"
           useOriginalUrl={true}
         />
       </CardBase>
