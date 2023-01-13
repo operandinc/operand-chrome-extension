@@ -15,5 +15,6 @@ import {
 export const CardMap: Map<ObjectType, React.FC<CardProps>> = new Map([
   [ObjectType.TEXT, TextResultCard],
   [ObjectType.HTML, HtmlResultCard],
+  [ObjectType.MARKDOWN, TextResultCard],
   [ObjectType.SOURCE_CODE, CodeResultCard],
 ]);
