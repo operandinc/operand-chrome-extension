@@ -12,18 +12,15 @@
     "prettier": "prettier --write '**/*.{js,jsx,ts,tsx,json,css,scss,md}'"
   },
   "dependencies": {
-    "@bufbuild/protobuf": "^0.1.1",
     "@headlessui/react": "^1.7.4",
     "@heroicons/react": "^2.0.13",
     "@hot-loader/react-dom": "^17.0.2",
-    "@operandinc/sdk": "^4.1.20",
+    "@operandinc/sdk": "^5.0.19",
     "@tailwindcss/line-clamp": "^0.4.2",
     "daisyui": "^2.42.1",
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
-    "react-hot-keys": "^2.7.2",
     "react-hot-loader": "^4.13.1",
-    "react-hotkeys-hook": "^4.0.4",
     "react-icons": "^4.7.1",
     "uuid": "^9.0.0"
   },
@@ -46,17 +43,9 @@
     "copy-webpack-plugin": "^7.0.0",
     "css-loader": "^6.7.2",
     "eslint": "^8.27.0",
-    "eslint-config-react-app": "^7.0.1",
-    "eslint-plugin-flowtype": "^8.0.3",
-    "eslint-plugin-import": "^2.26.0",
-    "eslint-plugin-jsx-a11y": "^6.6.1",
-    "eslint-plugin-react": "^7.31.10",
-    "eslint-plugin-react-hooks": "^4.6.0",
-    "file-loader": "^6.2.0",
     "fs-extra": "^10.1.0",
     "html-loader": "^3.1.0",
     "html-webpack-plugin": "^5.5.0",
-    "node-sass": "^8.0.0",
     "postcss": "^8.4.19",
     "postcss-cli": "^9.1.0",
     "postcss-loader": "^7.0.1",
@@ -68,7 +57,6 @@
     "ts-loader": "^9.4.1",
     "typescript": "^4.9.3",
     "webpack": "^5.75.0",
-    "webpack-cli": "^4.10.0",
     "webpack-dev-server": "^4.11.1"
   }
 }

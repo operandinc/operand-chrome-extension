@@ -1,34 +1,76 @@
 import { Tab } from '@headlessui/react';
 import {
-  IndexService,
-  ListIndexesResponse,
+  File,
+  FileService,
   operandClient,
+  TenantService,
 } from '@operandinc/sdk';
 import React from 'react';
-import {
-  addRule,
-  getRules,
-  getSettings,
-  removeRule,
-  Rule,
-  setSetting,
-  setSettings,
-  Settings,
-} from '../../storage';
+import { endpoint } from '../../environment';
+import { getSettings, setSetting, setSettings, Settings } from '../../storage';
 import './Options.css';
 
 const Options: React.FC = () => {
   const [data, setData] = React.useState<Settings>({
     apiKey: '',
     searchInjectionEnabled: false,
-    automaticIndexingEnabled: false,
-    automaticIndexingDestination: '',
-    manualIndexingMostRecentDestination: '',
+    overrideNewTab: false,
     defaultResults: 1,
+    parentId: '',
+    firstName: '',
   });
-  const [rules, setRules] = React.useState<Rule[]>([]);
-  const [domain, setDomain] = React.useState<string>('');
-  const [indexes, setIndexes] = React.useState<ListIndexesResponse>();
+  // Null means root folder
+  const [defaultFolder, setDefaultFolder] = React.useState<File | null>(null);
+  const [viewingFolder, setViewingFolder] = React.useState<File | null>(null);
+  const [children, setChildren] = React.useState<File[]>([]);
+  const [loading, setLoading] = React.useState<boolean>(false);
+  console.log(data);
+  async function getChildren(parentId: string, apiKey: string) {
+    setLoading(true);
+    const client = operandClient(FileService, apiKey, endpoint);
+    const res = await client.listFiles({
+      filter: {
+        parentId: parentId,
+      },
+      returnOptions: {
+        includeParents: true,
+      },
+    });
+    if (res.files) {
+      setChildren(res.files.filter((f) => !f.sizeBytes));
+    }
+    setLoading(false);
+  }
+
+  async function getDefaultFolder(
+    apiKey: string,
+    children: boolean,
+    parentId: string
+  ) {
+    const client = operandClient(FileService, apiKey, endpoint);
+    if (parentId === '') {
+      setDefaultFolder(null);
+      if (children) {
+        getChildren('', apiKey);
+      }
+      return;
+    }
+    const res = await client.getFile({
+      selector: {
+        selector: {
+          case: 'id',
+          value: parentId,
+        },
+      },
+    });
+    if (res.file) {
+      setDefaultFolder(res.file);
+    }
+    if (children) {
+      getChildren('', apiKey);
+    }
+  }
+
   React.useEffect(() => {
     async function onLoad() {
       const settings = await getSettings();
@@ -36,11 +78,7 @@ const Options: React.FC = () => {
         return null;
       }
       setData(settings);
-      const rules = await getRules();
-      if (!rules) {
-        return null;
-      }
-      setRules(rules);
+      getDefaultFolder(settings.apiKey, true, settings.parentId);
     }
     onLoad();
   }, []);
@@ -49,21 +87,10 @@ const Options: React.FC = () => {
     async function onChange() {
       // If the settings change, save them to storage
       setSettings(data);
-      if (data?.automaticIndexingEnabled && data?.apiKey) {
-        const indexClient = operandClient(
-          IndexService,
-          data.apiKey,
-          'https://api.operand.ai'
-        );
-
-        const indexes = await indexClient.listIndexes({});
-        setIndexes(indexes);
-      }
     }
     onChange();
   }, [data]);
 
-  console.log('data', data);
   return (
     <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10">
       <div className="mx-auto max-w-3xl prose prose-sm">
@@ -82,31 +109,19 @@ const Options: React.FC = () => {
                   </div>
                 )}
               </Tab>
-
-              <Tab>
-                {({ selected }) => (
-                  <div
-                    className={`tab tab-bordered ${
-                      selected ? 'tab-active' : ''
-                    }`}
-                  >
-                    Rules
-                  </div>
-                )}
-              </Tab>
             </div>
           </Tab.List>
           <Tab.Panels>
             <Tab.Panel>
-              <h2>API Key</h2>
+              <h2>Chrome Extension Code</h2>
               <p>
-                Your API Key lets the extension access your Operand account. You
+                Your code lets the extension access your Operand account. You
                 can find it{' '}
                 <span
                   className="link"
                   onClick={() =>
                     chrome.tabs.create({
-                      url: 'https://operand.ai/profile',
+                      url: 'https://operand.ai/interfaces?tab=chrome',
                     })
                   }
                 >
@@ -124,7 +139,7 @@ const Options: React.FC = () => {
                   });
                 }}
                 autoFocus={true}
-                placeholder="paste your api key here"
+                placeholder="paste your code here"
                 className="input input-bordered w-full max-w-md"
               />
               {data.apiKey !== '' && (
@@ -176,132 +191,117 @@ const Options: React.FC = () => {
                       </div>
                     ))}
                   </div>
-
-                  <h3>Automatic Indexing [Experimental]</h3>
+                  <h3>Default Folder</h3>
                   <p>
-                    Automatically send your public browsing data to an Operand
-                    index. We only send the URL of the pages you visit so only
-                    public websites are indexed.
+                    By default Operand will search over all of your files. Here
+                    you can choose a specific folder to search within by
+                    default.
                   </p>
+                  {defaultFolder && (
+                    <b>Current Default Folder: {defaultFolder.name}</b>
+                  )}
+                  <div className="border p-4 my-4">
+                    <p>
+                      Currently Viewing:{' '}
+                      {viewingFolder ? viewingFolder.name : 'Home Folder'}
+                    </p>
+                    {loading ? (
+                      <p>Loading...</p>
+                    ) : (
+                      <>
+                        {children.length > 0 ? (
+                          <ul className="menu">
+                            <li className="menu-title">
+                              <span>Subfolders:</span>
+                            </li>
+
+                            {children.map((child) => (
+                              <li
+                                onClick={async () => {
+                                  // View the folder
+                                  setViewingFolder(child);
+                                  getChildren(child.id, data.apiKey);
+                                }}
+                                key={child.id}
+                              >
+                                <a>{child.name}</a>
+                              </li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <p>This folder has no subfolders.</p>
+                        )}
+                      </>
+                    )}
+
+                    <div className="flex justify-end gap-4">
+                      <button
+                        onClick={() => {
+                          setViewingFolder(null);
+                          getChildren('', data.apiKey);
+                        }}
+                        className={`btn btn-sm ${
+                          viewingFolder ? 'btn-outline' : 'btn-disabled'
+                        }`}
+                      >
+                        Back to Home
+                      </button>
+
+                      <button
+                        onClick={async () => {
+                          // Set the default folder
+                          if (viewingFolder) {
+                            await setSettings({
+                              ...data,
+                              parentId: viewingFolder.id,
+                            });
+                            const settings = await getSettings();
+                            if (settings) {
+                              setData(settings);
+                            }
+                            setDefaultFolder(viewingFolder);
+                          } else {
+                            await setSettings({
+                              ...data,
+                              parentId: '',
+                            });
+
+                            const settings = await getSettings();
+                            if (settings) {
+                              setData(settings);
+                            }
+                            setDefaultFolder(null);
+                          }
+                        }}
+                        className="btn btn-sm btn-primary"
+                      >
+                        Set {viewingFolder ? viewingFolder.name : 'Home'} as
+                        Default
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Folder Browser Component*/}
+                  <h3>[Beta] New Tab Chat</h3>
+                  <p>
+                    Changes your new tab page to a be chat interface with
+                    Operand.
+                  </p>
+                  {/* Boolean Toggle */}
                   <input
                     type="checkbox"
                     onChange={async (e) => {
-                      await setSetting(
-                        'automaticIndexingEnabled',
-                        e.target.checked
-                      );
+                      await setSetting('overrideNewTab', e.target.checked);
                       const settings = await getSettings();
                       if (settings) {
                         setData(settings);
                       }
                     }}
                     className="toggle toggle-success"
-                    checked={data.automaticIndexingEnabled}
+                    checked={data.overrideNewTab}
                   />
-                  {data.automaticIndexingEnabled && (
-                    <div className="pl-4 border-l-2">
-                      <h4>Destination Index</h4>
-                      <p>
-                        Please select the index you would like to send your
-                        public browsing data to. We recommend using a private
-                        index.
-                      </p>
-                      <select
-                        className="select select-bordered	 w-full max-w-xs"
-                        value={data.automaticIndexingDestination}
-                        onChange={async (e) => {
-                          await setSetting(
-                            'automaticIndexingDestination',
-                            e.target.value
-                          );
-                          const settings = await getSettings();
-                          if (settings) {
-                            setData(settings);
-                          }
-                        }}
-                      >
-                        {indexes?.indexes.map((index, i) => (
-                          <option value={index.publicId} key={i}>{`${
-                            index.public ? '(public)' : '(private)'
-                          } ${index.name}`}</option>
-                        ))}
-                      </select>
-                    </div>
-                  )}
                 </div>
               )}
-            </Tab.Panel>
-            <Tab.Panel>
-              <h2>Rules</h2>
-              <p>
-                Rules let you control what domains are <b>automatically</b>{' '}
-                indexed. You can add a domain like "example.com" and the
-                extension won't index any pages from that domain. You can always
-                index pages manually.
-              </p>
-              <input
-                type="text"
-                value={domain}
-                onChange={(e) => {
-                  setDomain(e.target.value);
-                }}
-                autoFocus={true}
-                placeholder="example.com"
-                className="input input-bordered w-full max-w-xs"
-              />
-              <button
-                onClick={async () => {
-                  if (domain !== '') {
-                    var hostname = domain;
-                    // Strip www. from the domain
-                    if (domain.startsWith('www.')) {
-                      hostname = domain.substring(4);
-                    }
-                    await addRule({
-                      domain: hostname,
-                      type: 'BLOCK',
-                    });
-                    const rules = await getRules();
-                    if (rules) {
-                      setRules(rules);
-                    }
-                    setDomain('');
-                  }
-                }}
-                className="btn ml-4 btn-primary"
-              >
-                block domain
-              </button>
-              <div className="flex flex-wrap gap-2 w-full pt-4">
-                {rules?.map((rule, i) => (
-                  <div
-                    key={i}
-                    className="badge flex-shrink  gap-2 hover:cursor-pointer hover:badge-warning truncate"
-                    onClick={async () => {
-                      await removeRule(rule);
-                      const rules = await getRules();
-                      if (rules) {
-                        setRules(rules);
-                      }
-                    }}
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      className="inline-block w-4 h-4 stroke-current"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M6 18L18 6M6 6l12 12"
-                      ></path>
-                    </svg>
-                    {rule.domain}
-                  </div>
-                ))}
-              </div>
             </Tab.Panel>
           </Tab.Panels>
         </Tab.Group>

@@ -1,18 +1,14 @@
-import { Combobox } from '@headlessui/react';
-import { ChevronUpDownIcon } from '@heroicons/react/24/solid';
-import { operandClient, OperandService, SearchResponse } from '@operandinc/sdk';
-import * as React from 'react';
 import {
-  getApiKey,
-  getIndexData,
-  saveActiveIndex,
-  StoredIndex,
-} from '../../../storage';
-import { CardMap } from '../cardmap';
+  File,
+  operandClient,
+  OperandService,
+  SearchResponse,
+} from '@operandinc/sdk';
+import * as React from 'react';
+import { endpoint } from '../../../environment';
+import { getApiKey, getParentId } from '../../../storage';
 import '../content.styles.css';
-import { LoadingCard } from './cards';
-
-const endpoint = 'https://api.operand.ai';
+import { FileResult, LoadingResult } from './results';
 
 enum Status {
   NOKEY,
@@ -21,8 +17,8 @@ enum Status {
   ERROR,
 }
 
-async function search(query: string, indexId?: string) {
-  console.log('searching', query, indexId);
+async function search(query: string, parentId: string) {
+  console.log('searching', query);
   var key = await getApiKey();
   if (!key) {
     return null;
@@ -31,22 +27,16 @@ async function search(query: string, indexId?: string) {
   const client = operandClient(OperandService, key, endpoint);
   const searchResponse = await client.search({
     query: query,
-    limit: 5,
-    indexIds: indexId ? [indexId] : undefined,
-    attemptAnswer: false,
-    objectOptions: {
-      includePreview: true,
+    maxResults: 5,
+    parentId: parentId,
+    fileReturnOptions: {
+      includeParents: true,
     },
+    adjacentSnippets: 1,
   });
   console.log(searchResponse);
   return searchResponse;
 }
-
-const FakeEmptyIndex: StoredIndex = {
-  indexId: '',
-  name: 'All indexes',
-  type: 'PERSONAL',
-};
 
 // Google search injection will be fixed size so as to not create a jarring experience.
 // Users can expand the search to see more results and also choose in their settings how many results they want to see by default.
@@ -55,11 +45,6 @@ export const Google: React.FC<{
   query: string;
   defaultResults: number;
 }> = ({ query, defaultResults }) => {
-  const [indexes, setIndexes] = React.useState<StoredIndex[]>([FakeEmptyIndex]);
-  const [activeIndex, setActiveIndex] = React.useState<StoredIndex | null>(
-    FakeEmptyIndex
-  );
-  const [indexQuery, setIndexQuery] = React.useState<string>('');
   const [searchResponse, setSearchResponse] = React.useState<SearchResponse>();
   const [expanded, setExpanded] = React.useState<boolean>(false);
   const [status, setStatus] = React.useState<Status>(Status.LOADING);
@@ -71,31 +56,12 @@ export const Google: React.FC<{
         setStatus(Status.NOKEY);
         return null;
       }
-      const indexData = await getIndexData();
+      var parentId = await getParentId();
 
-      if (indexData) {
-        // Scope search to a specific index
-        setIndexes([FakeEmptyIndex, ...indexData.indexes]);
-        const activeIndex = indexData.indexes.find(
-          (idx) => idx.indexId === indexData.activeIndex
-        );
-        setActiveIndex(activeIndex ? activeIndex : FakeEmptyIndex);
-
-        const res = await search(
-          query,
-          indexData.activeIndex ? indexData.activeIndex : undefined
-        );
-        if (res) {
-          setSearchResponse(res);
-          return;
-        }
-      } else {
-        // Search all indexes
-        const res = await search(query);
-        if (res) {
-          setSearchResponse(res);
-          return;
-        }
+      const res = await search(query, parentId);
+      if (res) {
+        setSearchResponse(res);
+        return;
       }
     }
     onLoad();
@@ -103,7 +69,7 @@ export const Google: React.FC<{
 
   React.useEffect(() => {
     if (searchResponse) {
-      if (searchResponse?.results && searchResponse?.results.length > 0) {
+      if (searchResponse.matches && searchResponse.matches.length > 0) {
         setStatus(Status.RESULTS);
       } else {
         setStatus(Status.ERROR);
@@ -111,82 +77,9 @@ export const Google: React.FC<{
     }
   }, [searchResponse]);
 
-  React.useEffect(() => {
-    if (activeIndex) {
-      saveActiveIndex(activeIndex.indexId);
-    }
-  }, [activeIndex]);
-
-  const filteredIndexes =
-    indexQuery === '' || indexQuery === undefined
-      ? indexes
-      : indexes.filter((idx) => {
-          return idx.name.toLowerCase().includes(indexQuery.toLowerCase());
-        });
-
+  console.log('searchResponse length', searchResponse?.matches.length);
   return (
     <div className="w-full">
-      {(status === Status.LOADING || status === Status.RESULTS) && (
-        <Combobox
-          value={activeIndex}
-          onChange={async (idx: StoredIndex | null) => {
-            setStatus(Status.LOADING);
-            setActiveIndex(idx);
-            if (idx && idx.indexId !== '') {
-              console.log(idx.indexId);
-              const res = await search(query, idx.indexId);
-              if (res) {
-                setSearchResponse(res);
-              }
-            } else {
-              const res = await search(query, undefined);
-              if (res) {
-                setSearchResponse(res);
-              }
-            }
-          }}
-          nullable
-        >
-          <div className="flex justify-end w-full pb-4 px-4">
-            <div className="flex items-center justify-end w-xs shadow-lg cursor-default border-primary-focus px-1 pt-1">
-              <Combobox.Input
-                className="input input-sm flex-grow focus:outline-none"
-                onChange={(event) => setIndexQuery(event.target.value)}
-                displayValue={(idx: StoredIndex | null) => {
-                  return idx ? idx.name : '';
-                }}
-                value={indexQuery}
-              />
-              <Combobox.Button
-                onClick={() => {
-                  setIndexQuery('');
-                  setActiveIndex(null);
-                }}
-                className="btn btn-square btn-sm"
-              >
-                <ChevronUpDownIcon className="h-6 w-6" />
-              </Combobox.Button>
-            </div>
-          </div>
-          <Combobox.Options className="max-h-52 w-full overflow-y-scroll overflow-x-hidden shadow-lg mb-4 p-2">
-            <div className="menu menu-compact">
-              {filteredIndexes.map((idx) => (
-                <Combobox.Option key={idx.indexId} value={idx}>
-                  {({ active, selected }) => (
-                    <div
-                      className={`${active ? 'active' : ''} ${
-                        selected ? 'bg-info text-info-content' : ''
-                      }`}
-                    >
-                      {idx.name}
-                    </div>
-                  )}
-                </Combobox.Option>
-              ))}
-            </div>
-          </Combobox.Options>
-        </Combobox>
-      )}
       {status === Status.NOKEY ? (
         <div className="w-full h-full flex flex-col justify-center items-center">
           <p>To get Operand search results you need to set your API Key.</p>
@@ -206,7 +99,7 @@ export const Google: React.FC<{
         <div className="w-full space-y-4 pb-8">
           {/* Make number of loading cards based on default number of results */}
           {[...Array(defaultResults)].map((_, i) => (
-            <LoadingCard key={i} />
+            <LoadingResult key={i} />
           ))}
           {defaultResults < 5 && (
             <div className="w-full divider p-4">
@@ -221,41 +114,26 @@ export const Google: React.FC<{
         </div>
       ) : status === Status.RESULTS && searchResponse ? (
         <div className="w-full space-y-4 pb-8">
-          {searchResponse.answer !== undefined ? <></> : null}
-          {/* Only show the default amount of results and if there is answer subtract 1*/}
-          {searchResponse.results
-            ?.slice(
-              0,
-              expanded
-                ? searchResponse.answer !== undefined
-                  ? searchResponse.results?.length - 1
-                  : searchResponse.results?.length
-                : defaultResults
-            )
+          {searchResponse.matches
+            .slice(0, expanded ? searchResponse.matches.length : defaultResults)
             .map((result, i) => {
-              // Get index and preview
-              const index = searchResponse.indexes[result.indexId];
-              const obj = searchResponse.objects[result.objectId];
-              if (!obj || !index) {
-                return null;
+              const file = searchResponse.files[result.fileId];
+              var parent: File | undefined;
+              if (file.parents.length > 0) {
+                console.log('file.parents', file.parents);
+                parent = file.parents[0];
               }
-
-              const card = CardMap.get(obj.type);
-              if (card) {
-                // Give the card a key and if we are only searching one index.
-                return React.createElement(
-                  card,
-                  {
-                    key: i,
-                    index: index,
-                    result: result,
-                    object: obj,
-                  },
-                  null
-                );
-              }
+              console.log('parent', parent);
+              return (
+                <FileResult
+                  key={i}
+                  file={file}
+                  parent={parent}
+                  result={result}
+                />
+              );
             })}
-          {searchResponse?.results.length > defaultResults && (
+          {searchResponse.matches.length > defaultResults && (
             <div className="w-full divider p-4">
               <div
                 className="btn btn-primary btn-sm"

@@ -1,7 +1,7 @@
 {
   "name": "Operand",
-  "description": "Build and share knowledge!",
-  "version": "0.0.6",
+  "description": "Unlock your Knowledge!",
+  "version": "0.0.7",
   "manifest_version": 3,
   "icons": {
     "16": "16.png",
@@ -11,7 +11,7 @@
   "omnibox": { "keyword": "operand" },
   "action": {
     "default_popup": "popup.html",
-    "default_title": "Save to Operand"
+    "default_title": "Chat with Operand"
   },
   "options_page": "options.html",
   "content_scripts": [

@@ -2,22 +2,22 @@
 
 export type Settings = {
   apiKey: string;
-  automaticIndexingEnabled: boolean;
-  automaticIndexingDestination: string;
   searchInjectionEnabled: boolean;
-  manualIndexingMostRecentDestination: string;
   defaultResults: number;
+  parentId: string;
+  overrideNewTab: boolean;
+  firstName: string;
 };
 
 async function validateSettings(settings: Settings) {
   const booleanSettings: (keyof Settings)[] = [
     'searchInjectionEnabled',
-    'automaticIndexingEnabled',
+    'overrideNewTab',
   ];
   const stringSettings: (keyof Settings)[] = [
     'apiKey',
-    'automaticIndexingDestination',
-    'manualIndexingMostRecentDestination',
+    'parentId',
+    'firstName',
   ];
 
   const numberSettings: (keyof Settings)[] = ['defaultResults'];
@@ -114,6 +114,42 @@ export async function getDefaultResults() {
   return defaultResults;
 }
 
+export async function getParentId() {
+  const folderId = await getSetting('parentId');
+  if (folderId === null) {
+    return 'home';
+  }
+  // Assert that the key is a string
+  if (typeof folderId !== 'string') {
+    return 'home';
+  }
+  return folderId;
+}
+
+export async function getOverrideNewTab() {
+  const overrideNewTab = await getSetting('overrideNewTab');
+  if (overrideNewTab === null) {
+    return false;
+  }
+  // Assert that the key is a string
+  if (typeof overrideNewTab !== 'boolean') {
+    return false;
+  }
+  return overrideNewTab;
+}
+
+export async function getFirstName() {
+  const firstName = await getSetting('firstName');
+  if (firstName === null) {
+    return '';
+  }
+  // Assert that the key is a string
+  if (typeof firstName !== 'string') {
+    return '';
+  }
+  return firstName;
+}
+
 // Set the entire settings object
 export async function setSettings(settings: Settings) {
   if (await validateSettings(settings)) {
@@ -143,127 +179,34 @@ export async function setSetting(key: keyof Settings, value: any) {
       }
       settings.apiKey = value;
       break;
-    case 'automaticIndexingEnabled':
-      if (typeof value !== 'boolean') {
-        return false;
-      }
-      settings.automaticIndexingEnabled = value;
-      break;
-    case 'automaticIndexingDestination':
-      if (typeof value !== 'string') {
-        return false;
-      }
-      settings.automaticIndexingDestination = value;
-      break;
-    case 'manualIndexingMostRecentDestination':
-      if (typeof value !== 'string') {
-        return false;
-      }
-      settings.manualIndexingMostRecentDestination = value;
-      break;
     case 'defaultResults':
       if (typeof value !== 'number') {
         return false;
       }
       settings.defaultResults = value;
       break;
+    case 'parentId':
+      if (typeof value !== 'string') {
+        return false;
+      }
+      settings.parentId = value;
+      break;
+    case 'overrideNewTab':
+      if (typeof value !== 'boolean') {
+        return false;
+      }
+      settings.overrideNewTab = value;
+      break;
+    case 'firstName':
+      if (typeof value !== 'string') {
+        return false;
+      }
+      settings.firstName = value;
+      break;
+
     default:
       return false;
   }
 
   await setSettings(settings);
-}
-
-export type Rule = {
-  domain: string;
-  type: 'BLOCK';
-};
-
-export async function getRules() {
-  const storage = await chrome.storage.sync.get('rules');
-  // Assert that the rules object exists
-  if (!storage) {
-    return null;
-  }
-  const rules: Rule[] = storage.rules;
-  // Validate the rules object
-  if (Array.isArray(rules)) {
-    return rules;
-  } else {
-    return null;
-  }
-}
-
-export async function setRules(rules: Rule[]) {
-  await chrome.storage.sync.set({ rules });
-}
-
-export async function addRule(rule: Rule) {
-  const rules = await getRules();
-  if (!rules) {
-    // If there are no rules, create a new array
-    await setRules([rule]);
-  } else {
-    // Otherwise, add the rule to the existing array
-    await setRules([...rules, rule]);
-  }
-  return true;
-}
-
-export async function removeRule(rule: Rule) {
-  const rules = await getRules();
-  if (!rules) {
-    return false;
-  }
-  const index = rules.findIndex((r) => r.domain === rule.domain);
-  if (index === -1) {
-    return false;
-  }
-  rules.splice(index, 1);
-  await setRules(rules);
-  return true;
-}
-
-export type StoredIndex = {
-  indexId: string;
-  name: string;
-  type: 'TEAM' | 'PERSONAL' | 'SUBSCRIPTION';
-};
-
-export type IndexData = {
-  activeIndex?: string;
-  indexes: StoredIndex[];
-};
-
-export async function getIndexData() {
-  const storage = await chrome.storage.sync.get('indexData');
-  // Assert that the indexData object exists
-  if (!storage) {
-    return null;
-  }
-  const indexData: IndexData = storage.indexData;
-  // Validate the indexData object
-  if (indexData && typeof indexData === 'object') {
-    return indexData;
-  } else {
-    return null;
-  }
-}
-
-export async function setIndexData(indexData: IndexData) {
-  await chrome.storage.sync.set({ indexData });
-}
-
-export async function deleteIndexData() {
-  await chrome.storage.sync.remove('indexData');
-}
-
-export async function saveActiveIndex(indexId?: string) {
-  const indexData = await getIndexData();
-  if (!indexData) {
-    return false;
-  }
-  indexData.activeIndex = indexId;
-  await setIndexData(indexData);
-  return true;
 }
