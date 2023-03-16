@@ -11,7 +11,7 @@ const Popup = () => {
   React.useEffect(() => {
     async function onLoad() {
       const apiKey = await getApiKey();
-      if (!apiKey) {
+      if (!apiKey || apiKey === '') {
         return null;
       }
       setApiKey(apiKey);

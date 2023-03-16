@@ -24,20 +24,24 @@ const Options: React.FC = () => {
   const [viewingFolder, setViewingFolder] = React.useState<File | null>(null);
   const [children, setChildren] = React.useState<File[]>([]);
   const [loading, setLoading] = React.useState<boolean>(false);
-  console.log(data);
+
   async function getChildren(parentId: string, apiKey: string) {
     setLoading(true);
     const client = operandClient(FileService, apiKey, endpoint);
-    const res = await client.listFiles({
-      filter: {
-        parentId: parentId,
-      },
-      returnOptions: {
-        includeParents: true,
-      },
-    });
-    if (res.files) {
-      setChildren(res.files.filter((f) => !f.sizeBytes));
+    try {
+      const res = await client.listFiles({
+        filter: {
+          parentId: parentId,
+        },
+        returnOptions: {
+          includeParents: true,
+        },
+      });
+      if (res.files) {
+        setChildren(res.files.filter((f) => !f.sizeBytes));
+      }
+    } catch (e) {
+      console.log(e);
     }
     setLoading(false);
   }
@@ -55,17 +59,22 @@ const Options: React.FC = () => {
       }
       return;
     }
-    const res = await client.getFile({
-      selector: {
+    try {
+      const res = await client.getFile({
         selector: {
-          case: 'id',
-          value: parentId,
+          selector: {
+            case: 'id',
+            value: parentId,
+          },
         },
-      },
-    });
-    if (res.file) {
-      setDefaultFolder(res.file);
+      });
+      if (res.file) {
+        setDefaultFolder(res.file);
+      }
+    } catch (e) {
+      console.log(e);
     }
+
     if (children) {
       getChildren('', apiKey);
     }
@@ -78,7 +87,9 @@ const Options: React.FC = () => {
         return null;
       }
       setData(settings);
-      getDefaultFolder(settings.apiKey, true, settings.parentId);
+      if (settings.apiKey !== '') {
+        getDefaultFolder(settings.apiKey, true, settings.parentId);
+      }
     }
     onLoad();
   }, []);
@@ -137,6 +148,7 @@ const Options: React.FC = () => {
                   chrome.runtime.sendMessage({
                     type: 'setApiKey',
                   });
+                  getDefaultFolder(e.target.value, true, data.parentId);
                 }}
                 autoFocus={true}
                 placeholder="paste your code here"
