@@ -27,6 +27,21 @@ const Chat: React.FC<Props> = (props) => {
   const [input, setInput] = React.useState<string>('');
   const [name, setName] = React.useState<string>('');
 
+  function sendMessage() {
+    setMessages((messages) => [
+      ...messages,
+      {
+        sender: name,
+        message: input,
+        id: uuid(),
+        confidence: 0,
+      },
+    ]);
+
+    converse(input);
+    setInput('');
+  }
+
   React.useEffect(() => {
     async function onLoad() {
       const firstName = await getFirstName();
@@ -151,7 +166,7 @@ const Chat: React.FC<Props> = (props) => {
             {message.confidence > 0 && (
               <div className="chat-footer">
                 <div
-                  className="tooltip tooltip-primary tooltip-right"
+                  className="tooltip tooltip-primary tooltip-right tooltip-open"
                   data-tip={
                     'Operand is ' +
                     (message.confidence * 100).toFixed(0) +
@@ -173,23 +188,19 @@ const Chat: React.FC<Props> = (props) => {
             onChange={(e) => setInput(e.target.value)}
             onKeyUp={async (e) => {
               if (e.key === 'Enter') {
-                setMessages((messages) => [
-                  ...messages,
-                  {
-                    sender: name,
-                    message: input,
-                    id: uuid(),
-                    confidence: 0,
-                  },
-                ]);
-
-                converse(input);
-                setInput('');
+                sendMessage();
               }
             }}
             placeholder="Type a message..."
           />
-          <button className="btn btn-sm btn-primary">Send</button>
+          <button
+            onClick={async () => {
+              sendMessage();
+            }}
+            className="btn btn-sm btn-primary"
+          >
+            Send
+          </button>
         </div>
       </div>
     </div>
