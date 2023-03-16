@@ -18,7 +18,6 @@ enum Status {
 }
 
 async function search(query: string, parentId: string) {
-  console.log('searching', query);
   var key = await getApiKey();
   if (!key) {
     return null;
@@ -34,7 +33,6 @@ async function search(query: string, parentId: string) {
     },
     adjacentSnippets: 1,
   });
-  console.log(searchResponse);
   return searchResponse;
 }
 
@@ -77,7 +75,6 @@ export const Google: React.FC<{
     }
   }, [searchResponse]);
 
-  console.log('searchResponse length', searchResponse?.matches.length);
   return (
     <div className="w-full">
       {status === Status.NOKEY ? (
@@ -120,10 +117,8 @@ export const Google: React.FC<{
               const file = searchResponse.files[result.fileId];
               var parent: File | undefined;
               if (file.parents.length > 0) {
-                console.log('file.parents', file.parents);
                 parent = file.parents[0];
               }
-              console.log('parent', parent);
               return (
                 <FileResult
                   key={i}
