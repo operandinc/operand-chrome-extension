@@ -166,7 +166,7 @@ const Chat: React.FC<Props> = (props) => {
             {message.confidence > 0 && (
               <div className="chat-footer">
                 <div
-                  className="tooltip tooltip-primary tooltip-right tooltip-open"
+                  className="tooltip tooltip-primary tooltip-right"
                   data-tip={
                     'Operand is ' +
                     (message.confidence * 100).toFixed(0) +
