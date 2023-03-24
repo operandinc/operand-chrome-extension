@@ -3,21 +3,27 @@
 export type Settings = {
   apiKey: string;
   searchInjectionEnabled: boolean;
+  answersEnabled: boolean;
   defaultResults: number;
   parentId: string;
   overrideNewTab: boolean;
   firstName: string;
+  automaticIndexing: boolean;
+  automaticIndexingFolderId: string;
 };
 
 async function validateSettings(settings: Settings) {
   const booleanSettings: (keyof Settings)[] = [
     'searchInjectionEnabled',
     'overrideNewTab',
+    'answersEnabled',
+    'automaticIndexing',
   ];
   const stringSettings: (keyof Settings)[] = [
     'apiKey',
     'parentId',
     'firstName',
+    'automaticIndexingFolderId',
   ];
 
   const numberSettings: (keyof Settings)[] = ['defaultResults'];
@@ -95,7 +101,19 @@ export async function getSearchInjectionEnabled() {
   if (enabled === null) {
     return false;
   }
-  // Assert that the key is a string
+  // Assert that the key is a boolean
+  if (typeof enabled !== 'boolean') {
+    return false;
+  }
+  return enabled;
+}
+
+export async function getAnswersEnabled() {
+  const enabled = await getSetting('answersEnabled');
+  if (enabled === null) {
+    return false;
+  }
+  // Assert that the key is a boolean
   if (typeof enabled !== 'boolean') {
     return false;
   }
@@ -203,7 +221,24 @@ export async function setSetting(key: keyof Settings, value: any) {
       }
       settings.firstName = value;
       break;
-
+    case 'answersEnabled':
+      if (typeof value !== 'boolean') {
+        return false;
+      }
+      settings.answersEnabled = value;
+      break;
+    case 'automaticIndexing':
+      if (typeof value !== 'boolean') {
+        return false;
+      }
+      settings.automaticIndexing = value;
+      break;
+    case 'automaticIndexingFolderId':
+      if (typeof value !== 'string') {
+        return false;
+      }
+      settings.automaticIndexingFolderId = value;
+      break;
     default:
       return false;
   }

@@ -4,12 +4,6 @@ import { v4 as uuid } from 'uuid';
 import { endpoint } from './environment';
 import { getFirstName, getSetting } from './storage';
 
-type Props = {
-  className?: string;
-  apiKey: string;
-  parentId: string;
-};
-
 type Message = {
   sender: string;
   message: string;
@@ -17,7 +11,12 @@ type Message = {
   confidence: number;
 };
 
-const Chat: React.FC<Props> = (props) => {
+const Chat: React.FC<{
+  className?: string;
+  apiKey: string;
+  parentId: string;
+  query?: string;
+}> = (props) => {
   const [conversationId, setConversationId] = React.useState<
     string | undefined
   >(undefined);
@@ -50,8 +49,7 @@ const Chat: React.FC<Props> = (props) => {
       } else {
         setName('User');
       }
-
-      if (init.current) {
+      if (init.current && !props.query) {
         // Send default welcome message
         setMessages((messages) => [
           ...messages,
@@ -63,6 +61,8 @@ const Chat: React.FC<Props> = (props) => {
           },
         ]);
         return;
+      } else if (init.current && props.query) {
+        await converse(props.query);
       }
     }
     onLoad();

@@ -8,6 +8,7 @@ import {
 import React from 'react';
 import { endpoint } from '../../environment';
 import { getSettings, setSetting, setSettings, Settings } from '../../storage';
+import FileBrowser from './browser';
 import './Options.css';
 
 const Options: React.FC = () => {
@@ -18,66 +19,47 @@ const Options: React.FC = () => {
     defaultResults: 1,
     parentId: '',
     firstName: '',
+    answersEnabled: false,
+    automaticIndexing: false,
+    automaticIndexingFolderId: '',
   });
   // Null means root folder
   const [defaultFolder, setDefaultFolder] = React.useState<File | null>(null);
-  const [viewingFolder, setViewingFolder] = React.useState<File | null>(null);
-  const [children, setChildren] = React.useState<File[]>([]);
-  const [loading, setLoading] = React.useState<boolean>(false);
+  const [automaticIndexingFolder, setAutomaticIndexingFolder] =
+    React.useState<File | null>(null);
 
-  async function getChildren(parentId: string, apiKey: string) {
-    setLoading(true);
-    const client = operandClient(FileService, apiKey, endpoint);
-    try {
-      const res = await client.listFiles({
-        filter: {
-          parentId: parentId,
-        },
-        returnOptions: {
-          includeParents: true,
-        },
-      });
-      if (res.files) {
-        setChildren(res.files.filter((f) => !f.sizeBytes));
-      }
-    } catch (e) {
-      console.log(e);
-    }
-    setLoading(false);
-  }
-
-  async function getDefaultFolder(
-    apiKey: string,
-    children: boolean,
-    parentId: string
-  ) {
-    const client = operandClient(FileService, apiKey, endpoint);
+  async function getDefaultFolder(apiKey: string, parentId: string) {
     if (parentId === '') {
       setDefaultFolder(null);
-      if (children) {
-        getChildren('', apiKey);
-      }
-      return;
+      return null;
     }
-    try {
-      const res = await client.getFile({
+    const client = operandClient(FileService, apiKey, endpoint);
+    const res = await client.getFile({
+      selector: {
         selector: {
-          selector: {
-            case: 'id',
-            value: parentId,
-          },
+          case: 'id',
+          value: parentId,
         },
-      });
-      if (res.file) {
-        setDefaultFolder(res.file);
-      }
-    } catch (e) {
-      console.log(e);
-    }
+      },
+    });
+    setDefaultFolder(res.file || null);
+  }
 
-    if (children) {
-      getChildren('', apiKey);
+  async function getAutomaticIndexingFolder(apiKey: string, folderId: string) {
+    if (folderId === '') {
+      setAutomaticIndexingFolder(null);
+      return null;
     }
+    const client = operandClient(FileService, apiKey, endpoint);
+    const res = await client.getFile({
+      selector: {
+        selector: {
+          case: 'id',
+          value: folderId,
+        },
+      },
+    });
+    setAutomaticIndexingFolder(res.file || null);
   }
 
   React.useEffect(() => {
@@ -87,9 +69,11 @@ const Options: React.FC = () => {
         return null;
       }
       setData(settings);
-      if (settings.apiKey !== '') {
-        getDefaultFolder(settings.apiKey, true, settings.parentId);
-      }
+      await getDefaultFolder(settings.apiKey, settings.parentId);
+      await getAutomaticIndexingFolder(
+        settings.apiKey,
+        settings.automaticIndexingFolderId
+      );
     }
     onLoad();
   }, []);
@@ -148,7 +132,7 @@ const Options: React.FC = () => {
                   chrome.runtime.sendMessage({
                     type: 'setApiKey',
                   });
-                  getDefaultFolder(e.target.value, true, data.parentId);
+                  await getDefaultFolder(e.target.value, data.parentId);
                 }}
                 autoFocus={true}
                 placeholder="paste your code here"
@@ -178,122 +162,136 @@ const Options: React.FC = () => {
                     className="toggle toggle-success"
                     checked={data.searchInjectionEnabled}
                   />
-                  <h3>Default Results Shown</h3>
-                  <p>
-                    Choose how many results you would like to see by default.
-                  </p>
-                  <div className="flex justify-start items-center gap-4">
-                    {/* Create options 1-5 */}
-                    {[1, 2, 3, 4, 5].map((i) => (
-                      <div key={i} className="flex flex-col items-center">
-                        <input
-                          type="radio"
-                          name="defaultResults"
-                          className="radio"
-                          checked={data.defaultResults === i}
-                          onChange={async (e) => {
-                            await setSetting('defaultResults', i);
-                            const settings = await getSettings();
-                            if (settings) {
-                              setData(settings);
-                            }
-                          }}
-                        />
-                        <p>{i}</p>
-                      </div>
-                    ))}
-                  </div>
-                  <h3>Default Folder</h3>
-                  <p>
-                    By default Operand will search over all of your files. Here
-                    you can choose a specific folder to search within by
-                    default.
-                  </p>
-                  {defaultFolder && (
-                    <b>Current Default Folder: {defaultFolder.name}</b>
-                  )}
-                  <div className="border p-4 my-4">
-                    <p>
-                      Currently Viewing:{' '}
-                      {viewingFolder ? viewingFolder.name : 'Home Folder'}
-                    </p>
-                    {loading ? (
-                      <p>Loading...</p>
-                    ) : (
-                      <>
-                        {children.length > 0 ? (
-                          <ul className="menu">
-                            <li className="menu-title">
-                              <span>Subfolders:</span>
-                            </li>
-
-                            {children.map((child) => (
-                              <li
-                                onClick={async () => {
-                                  // View the folder
-                                  setViewingFolder(child);
-                                  getChildren(child.id, data.apiKey);
-                                }}
-                                key={child.id}
-                              >
-                                <a>{child.name}</a>
-                              </li>
-                            ))}
-                          </ul>
-                        ) : (
-                          <p>This folder has no subfolders.</p>
-                        )}
-                      </>
-                    )}
-
-                    <div className="flex justify-end gap-4">
-                      <button
-                        onClick={() => {
-                          setViewingFolder(null);
-                          getChildren('', data.apiKey);
-                        }}
-                        className={`btn btn-sm ${
-                          viewingFolder ? 'btn-outline' : 'btn-disabled'
-                        }`}
-                      >
-                        Back to Home
-                      </button>
-
-                      <button
-                        onClick={async () => {
-                          // Set the default folder
-                          if (viewingFolder) {
-                            await setSettings({
-                              ...data,
-                              parentId: viewingFolder.id,
-                            });
-                            const settings = await getSettings();
-                            if (settings) {
-                              setData(settings);
-                            }
-                            setDefaultFolder(viewingFolder);
-                          } else {
-                            await setSettings({
-                              ...data,
-                              parentId: '',
-                            });
-
-                            const settings = await getSettings();
-                            if (settings) {
-                              setData(settings);
-                            }
-                            setDefaultFolder(null);
+                  {data.searchInjectionEnabled && (
+                    <>
+                      <h3>Answers</h3>
+                      <p>
+                        Rather than just showing you files, Operand can also
+                        show you direct answers to your questions.
+                      </p>
+                      <input
+                        type="checkbox"
+                        onChange={async (e) => {
+                          await setSetting('answersEnabled', e.target.checked);
+                          const settings = await getSettings();
+                          if (settings) {
+                            setData(settings);
                           }
                         }}
-                        className="btn btn-sm btn-primary"
-                      >
-                        Set {viewingFolder ? viewingFolder.name : 'Home'} as
-                        Default
-                      </button>
-                    </div>
-                  </div>
+                        className="toggle toggle-success"
+                        checked={data.answersEnabled}
+                      />
 
-                  {/* Folder Browser Component*/}
+                      <h3>Default Results Shown</h3>
+                      <p>
+                        Choose how many results you would like to see by
+                        default.
+                      </p>
+                      <div className="flex justify-start items-center gap-4">
+                        {/* Create options 1-5 */}
+                        {[1, 2, 3, 4, 5].map((i) => (
+                          <div key={i} className="flex flex-col items-center">
+                            <input
+                              type="radio"
+                              name="defaultResults"
+                              className="radio"
+                              checked={data.defaultResults === i}
+                              onChange={async (e) => {
+                                await setSetting('defaultResults', i);
+                                const settings = await getSettings();
+                                if (settings) {
+                                  setData(settings);
+                                }
+                              }}
+                            />
+                            <p>{i}</p>
+                          </div>
+                        ))}
+                      </div>
+                      <h3>Default Search Folder</h3>
+                      <p>
+                        By default Operand will search over all of your files.
+                        Here you can choose a specific folder to search within
+                        by default.
+                      </p>
+                      {defaultFolder && (
+                        <b>Current Default Folder: {defaultFolder.name}</b>
+                      )}
+                      <FileBrowser
+                        apiKey={data.apiKey}
+                        defaultFolder={defaultFolder}
+                        callback={async (file) => {
+                          // Set the default folder
+
+                          await setSettings({
+                            ...data,
+                            parentId: file?.id || '',
+                          });
+                          const settings = await getSettings();
+                          if (settings) {
+                            setData(settings);
+                          }
+                          setDefaultFolder(file || null);
+                        }}
+                        buttonText="default folder."
+                      />
+                    </>
+                  )}
+                  <h3>Automatic Indexing</h3>
+                  <p>
+                    Operand can automatically index the websites you visit and
+                    add them to your account. This only adds publicly available
+                    information and does not scrape your visits to any websites
+                    that require a login.
+                  </p>
+                  <input
+                    type="checkbox"
+                    onChange={async (e) => {
+                      await setSetting('automaticIndexing', e.target.checked);
+                      const settings = await getSettings();
+                      if (settings) {
+                        setData(settings);
+                      }
+                    }}
+                    className="toggle toggle-success"
+                    checked={data.automaticIndexing}
+                  />
+                  {data.automaticIndexing && (
+                    <>
+                      <h4>Automatic Indexing Destination Folder</h4>
+                      <p>
+                        Choose a folder where all of the websites you visit will
+                        be saved to.
+                      </p>
+                      {automaticIndexingFolder ? (
+                        <b>
+                          Current Automatic Indexing Folder:{' '}
+                          {automaticIndexingFolder.name}
+                        </b>
+                      ) : (
+                        <b>Current Automatic Indexing Folder: None</b>
+                      )}
+                      <FileBrowser
+                        apiKey={data.apiKey}
+                        defaultFolder={automaticIndexingFolder}
+                        callback={async (file) => {
+                          // Set the automatic indexing folder
+
+                          await setSettings({
+                            ...data,
+                            automaticIndexingFolderId: file?.id || '',
+                          });
+                          const settings = await getSettings();
+                          if (settings) {
+                            setData(settings);
+                          }
+                          setAutomaticIndexingFolder(file || null);
+                        }}
+                        buttonText="automatic indexing folder."
+                      />
+                    </>
+                  )}
+
                   <h3>[Beta] New Tab Chat</h3>
                   <p>
                     Changes your new tab page to a be chat interface with

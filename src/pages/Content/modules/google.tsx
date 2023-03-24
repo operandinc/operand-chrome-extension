@@ -5,8 +5,10 @@ import {
   SearchResponse,
 } from '@operandinc/sdk';
 import * as React from 'react';
+import { render } from 'react-dom';
+import Chat from '../../../chat';
 import { endpoint } from '../../../environment';
-import { getApiKey, getParentId } from '../../../storage';
+import { getApiKey, getParentId, getSettings } from '../../../storage';
 import '../content.styles.css';
 import { FileResult, LoadingResult } from './results';
 
@@ -17,7 +19,7 @@ enum Status {
   ERROR,
 }
 
-async function search(query: string, parentId: string) {
+async function search(query: string, parentId: string, answers: boolean) {
   var key = await getApiKey();
   if (!key) {
     return null;
@@ -32,6 +34,7 @@ async function search(query: string, parentId: string) {
       includeParents: true,
     },
     adjacentSnippets: 1,
+    checkConversational: answers,
   });
   return searchResponse;
 }
@@ -49,16 +52,35 @@ export const Google: React.FC<{
 
   React.useEffect(() => {
     async function onLoad() {
-      var key = await getApiKey();
-      if (!key) {
+      var settings = await getSettings();
+      if (!settings || !settings.apiKey) {
         setStatus(Status.NOKEY);
         return null;
       }
-      var parentId = await getParentId();
-
-      const res = await search(query, parentId);
+      const res = await search(
+        query,
+        settings.parentId,
+        settings.answersEnabled
+      );
       if (res) {
         setSearchResponse(res);
+        if (res.conversational) {
+          // We want to render the chat window
+          // First find the chat entry point by id
+          const chat = document.getElementById('operand-chat');
+          if (chat) {
+            render(
+              React.createElement(Chat, {
+                query: query,
+                parentId: settings.parentId,
+                apiKey: settings.apiKey,
+                className:
+                  'h-[45vh] flex flex-col-reverse justify-start overflow-auto p-4 shadow-lg rounded-lg mb-10 w-full',
+              }),
+              chat
+            );
+          }
+        }
         return;
       }
     }

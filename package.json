@@ -15,7 +15,7 @@
     "@headlessui/react": "^1.7.4",
     "@heroicons/react": "^2.0.13",
     "@hot-loader/react-dom": "^17.0.2",
-    "@operandinc/sdk": "^5.0.19",
+    "@operandinc/sdk": "^5.0.21",
     "@tailwindcss/line-clamp": "^0.4.2",
     "daisyui": "^2.42.1",
     "react": "^17.0.2",

@@ -75,40 +75,45 @@ const InfoContainer: React.FC<{
   parent?: File;
 }> = ({ file, parent }) => {
   return (
-    <div>
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          {/* Don't turn blue if it has been clicked before */}
-          <a
-            href={frontend + '/files?id=' + file.id}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="btn btn-sm btn-outline normal-case gap-4 truncate visited:text-primary"
-          >
-            <FileIcon file={file} />
-            {file.name}
-          </a>
-        </div>
+    <div className="flex flex-row justify-between items-center gap-4 w-full">
+      {/* File Link */}
+      <div className="flex flex-row items-center gap-2 max-w-3/4 truncate">
+        <FileIcon file={file} />
+        <a
+          href={frontend + '/files?id=' + file.id}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="link normal-case visited:text-primary text-sm"
+        >
+          {file.name}
+        </a>
+      </div>
+      {/* Parent Link */}
+      <div className="flex flex-row items-center gap-2 max-w-1/4 truncate">
         {parent ? (
-          <a
-            href={frontend + '/files?id=' + parent.id}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="btn btn-sm btn-outline normal-case gap-4 truncate visited:text-primary"
-          >
+          <>
             <FileIcon file={parent} />
-            {parent.name}
-          </a>
+            <a
+              href={frontend + '/files?id=' + parent.id}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="link normal-case visited:text-primary text-sm"
+            >
+              {parent.name}
+            </a>
+          </>
         ) : (
-          <a
-            href={frontend + '/files?id=home'}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="btn btn-sm btn-outline normal-case gap-4 truncate visited:text-primary"
-          >
+          <>
             <FolderIcon className="h-4 w-4" />
-            Home
-          </a>
+            <a
+              href={frontend + '/files?id=home'}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="link normal-case visited:text-primary truncate text-sm"
+            >
+              Home
+            </a>
+          </>
         )}
       </div>
     </div>
@@ -123,3 +128,39 @@ export const FileResult: React.FC<CardProps> = ({ result, file, parent }) => {
     </ResultBase>
   );
 };
+
+{
+  /* <a
+        href={frontend + '/files?id=' + file.id}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="link normal-case visited:text-primary flex-shrink min-w-1/2 truncate text-sm"
+      >
+        <span className="flex w-full justify-between items-center">
+          <FileIcon file={file} />
+          {file.name}
+        </span>
+      </a>
+      {parent ? (
+        <a
+          href={frontend + '/files?id=' + parent.id}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="link normal-case visited:text-primary flex-grow truncate text-sm"
+        >
+          <FileIcon file={parent} />
+          {parent.name}
+        </a>
+      ) : (
+        <a
+          href={frontend + '/files?id=home'}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="link normal-case visited:text-primary flex-grow truncate text-sm"
+        >
+          <FolderIcon className="h-4 w-4" />
+          Home
+        </a>
+      )}
+    </div> */
+}

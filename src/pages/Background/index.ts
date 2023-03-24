@@ -29,6 +29,9 @@ chrome.runtime.onInstalled.addListener(async () => {
       parentId: '',
       overrideNewTab: false,
       firstName: '',
+      answersEnabled: false,
+      automaticIndexing: false,
+      automaticIndexingFolderId: '',
     });
   }
   // If the token is not set, open the options page
@@ -46,13 +49,6 @@ chrome.omnibox.onInputEntered.addListener(async function (text) {
   chrome.tabs.create({ url: newURL });
 });
 
-// On Alarm
-chrome.alarms.onAlarm.addListener(async (alarm) => {
-  if (alarm.name === 'testFolder') {
-    await testFolder();
-  }
-});
-
 // Listen for messages from content script
 chrome.runtime.onMessage.addListener(async function (request) {
   // If the message is to open the options page
@@ -61,19 +57,47 @@ chrome.runtime.onMessage.addListener(async function (request) {
   }
   // If the message is to get the indexes
   else if (request.type === 'setApiKey') {
-    await testFolder();
     await getName();
   }
 });
 
-// // On Tab Update
-// chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
-//   if (!tab) return;
+const blockList = [
+  'https://www.google.com/search',
+  'https://operand.ai',
+  'chrome:',
+];
 
-//   if (tab.url === 'chrome://newtab/' && overrideNewTab && tab.id) {
-//     chrome.tabs.update(tab.id, { url: chrome.runtime.getURL('/newtab.html') });
-//   }
-// });
+// On Tab Update
+chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
+  if (!tab) return;
+  if (changeInfo.status === 'complete') {
+    const settings = await getSettings();
+    if (!settings) return;
+    if (settings.automaticIndexing && settings.automaticIndexingFolderId) {
+      // Check if the url is in the block list
+      for (let i = 0; i < blockList.length; i++) {
+        if (tab.url?.startsWith(blockList[i])) {
+          return;
+        }
+      }
+      // We send the url to the server to index
+      try {
+        const client = operandClient(FileService, settings.apiKey, endpoint);
+        await client.importFromURL({
+          url: tab.url,
+          parentId: settings.automaticIndexingFolderId,
+          importOptions: {
+            smart: false,
+            updateOnDuplicate: true,
+            qualityFilter: 4,
+          },
+        });
+      } catch (e) {
+        console.log(e);
+      }
+    }
+  }
+});
 
 chrome.tabs.onCreated.addListener(async (tab) => {
   const overrideNewTab = await getOverrideNewTab();
@@ -84,40 +108,6 @@ chrome.tabs.onCreated.addListener(async (tab) => {
     });
   }
 });
-
-async function testFolder() {
-  // We just want to ensure that the folder can be accessed by the user
-  const settings = await getSettings();
-  if (!settings) {
-    return;
-  }
-  if (!settings.apiKey || settings.apiKey === '') {
-    console.log('no api key');
-    return;
-  }
-  if (!settings.parentId || settings.parentId === '') {
-    console.log('default folder');
-    return;
-  } else {
-    const client = operandClient(FileService, settings.apiKey, endpoint);
-
-    try {
-      await client.getFile({
-        selector: {
-          selector: {
-            case: 'id',
-            value: settings.parentId,
-          },
-        },
-      });
-      console.log('folder exists and is accessible');
-    } catch (e) {
-      console.log('folder does not exist or is not accessible');
-      settings.parentId = '';
-      await setSettings(settings);
-    }
-  }
-}
 
 async function getName() {
   const settings = await getSettings();
@@ -141,5 +131,4 @@ async function getName() {
 // On load
 chrome.runtime.onStartup.addListener(async () => {
   await getName();
-  await testFolder();
 });
