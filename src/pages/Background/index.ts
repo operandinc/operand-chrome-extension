@@ -17,8 +17,6 @@ import {
 // On Install
 chrome.runtime.onInstalled.addListener(async () => {
   console.log('Installed!');
-
-  chrome.alarms.create('testFolder', { periodInMinutes: 60 * 3 });
   const settings = await getSettings();
   if (!settings) {
     // Set defaults
