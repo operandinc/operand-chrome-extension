@@ -42,7 +42,7 @@
     "concurrently": "^6.5.1",
     "copy-webpack-plugin": "^7.0.0",
     "css-loader": "^6.7.2",
-    "eslint": "^8.27.0",
+    "eslint": "^8.38.0",
     "fs-extra": "^10.1.0",
     "html-loader": "^4.2.0",
     "html-webpack-plugin": "^5.5.0",
